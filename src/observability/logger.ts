@@ -1,6 +1,13 @@
 import pino, { type DestinationStream, type Logger } from 'pino';
 
-export function createLogger(level: string, destination?: DestinationStream): Logger {
+import type { PublicLogStore } from './public-log-store.js';
+
+export function createLogger(level: string, destination?: DestinationStream, publicLogs?: PublicLogStore): Logger {
+  const output =
+    publicLogs === undefined
+      ? destination
+      : pino.multistream([{ stream: destination ?? process.stdout }, { stream: publicLogs }]);
+
   return pino(
     {
       level,
@@ -11,6 +18,6 @@ export function createLogger(level: string, destination?: DestinationStream): Lo
       },
       timestamp: pino.stdTimeFunctions.isoTime,
     },
-    destination,
+    output,
   );
 }

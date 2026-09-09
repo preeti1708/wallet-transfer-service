@@ -71,6 +71,8 @@ Prometheus metrics are exposed at `/metrics`:
 - `wallet_transfers_declined_insufficient_funds_total`
 - `wallet_idempotent_replays_total`
 
+A bounded, sanitized feed of recent domain events is publicly readable at `/logs`. It exposes event names, correlation IDs, transfer IDs, and outcomes while omitting authorization values, user identities, wallet IDs, request bodies, and amounts. The response is marked `Cache-Control: no-store`.
+
 ## Local development
 
 Requirements: Node.js 22+, npm, and PostgreSQL 16.

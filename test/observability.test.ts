@@ -5,6 +5,7 @@ import type { Pool } from 'pg';
 
 import { createApp } from '../src/app.js';
 import { createLogger } from '../src/observability/logger.js';
+import { createPublicLogStore } from '../src/observability/public-log-store.js';
 import { createTestPool, resetDatabase } from './helpers/database.js';
 
 describe('observability', () => {
@@ -48,6 +49,33 @@ describe('observability', () => {
     const app = createApp({ pool, logLevel: 'silent' });
     const response = await request(app).get('/health');
     expect(response.headers['x-correlation-id']).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it('publishes a bounded sanitized domain log feed', async () => {
+    let output = '';
+    const destination: DestinationStream = { write: (chunk) => (output += chunk) };
+    const publicLogs = createPublicLogStore(10);
+    const logger = createLogger('info', destination, publicLogs);
+    const app = createApp({ pool, logger, publicLogs });
+
+    await request(app)
+      .post('/wallets')
+      .set('authorization', 'Bearer public-feed-secret')
+      .set('x-correlation-id', 'public-log-correlation')
+      .send({ initial_balance_paise: 100 });
+
+    const response = await request(app).get('/logs');
+
+    expect(response.status).toBe(200);
+    expect(response.headers['cache-control']).toBe('no-store');
+    expect(response.body.entries).toContainEqual(
+      expect.objectContaining({
+        event: 'wallet.created',
+        correlation_id: 'public-log-correlation',
+      }),
+    );
+    expect(JSON.stringify(response.body)).not.toContain('public-feed-secret');
+    expect(response.body.entries).toHaveLength(1);
   });
 
   it('exports request measurements and required transfer-domain counters', async () => {

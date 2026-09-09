@@ -9,6 +9,7 @@ import type { Pool } from 'pg';
 import { AppError } from './http/errors.js';
 import { createLogger } from './observability/logger.js';
 import { createMetrics } from './observability/metrics.js';
+import { createPublicLogStore, type PublicLogStore } from './observability/public-log-store.js';
 import { registerTransferRoutes } from './transfers/transfer-routes.js';
 import { registerWalletRoutes } from './wallets/wallet-routes.js';
 
@@ -16,6 +17,7 @@ export interface CreateAppOptions {
   pool: Pool;
   logLevel?: string;
   logger?: Logger;
+  publicLogs?: PublicLogStore;
 }
 
 const acceptedCorrelationId = /^[A-Za-z0-9._-]{1,128}$/;
@@ -25,7 +27,10 @@ function parserStatus(error: unknown): number | undefined {
   return typeof error.status === 'number' && error.status >= 400 && error.status < 500 ? error.status : undefined;
 }
 
-export function createApp({ pool, logLevel = 'info', logger = createLogger(logLevel) }: CreateAppOptions): express.Express {
+export function createApp(options: CreateAppOptions): express.Express {
+  const { pool, logLevel = 'info' } = options;
+  const publicLogs = options.publicLogs ?? createPublicLogStore();
+  const logger = options.logger ?? createLogger(logLevel, undefined, publicLogs);
   const app = express();
   const metrics = createMetrics();
   app.disable('x-powered-by');
@@ -59,6 +64,11 @@ export function createApp({ pool, logLevel = 'info', logger = createLogger(logLe
   app.get('/metrics', async (_request, response) => {
     response.setHeader('content-type', metrics.registry.contentType);
     response.status(200).send(await metrics.registry.metrics());
+  });
+
+  app.get('/logs', (_request, response) => {
+    response.setHeader('cache-control', 'no-store');
+    response.status(200).json({ entries: publicLogs.entries() });
   });
 
   registerWalletRoutes(app, pool);

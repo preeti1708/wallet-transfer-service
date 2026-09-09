@@ -3,13 +3,15 @@ import { runMigrations } from './db/migrate.js';
 import { createPool } from './db/pool.js';
 import { createApp } from './app.js';
 import { createLogger } from './observability/logger.js';
+import { createPublicLogStore } from './observability/public-log-store.js';
 
 const config = loadConfig(process.env);
 const pool = createPool(config.databaseUrl);
-const logger = createLogger(config.logLevel);
+const publicLogs = createPublicLogStore();
+const logger = createLogger(config.logLevel, undefined, publicLogs);
 
 await runMigrations(pool);
-const app = createApp({ pool, logger });
+const app = createApp({ pool, logger, publicLogs });
 const server = app.listen(config.port, config.host);
 logger.info({ event: 'server.started', host: config.host, port: config.port }, 'Wallet service started');
 
