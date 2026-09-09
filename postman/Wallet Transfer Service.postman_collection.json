@@ -1,0 +1,380 @@
+{
+  "info": {
+    "_postman_id": "ef2e07ce-2bf8-4d5d-a616-dd5563d67bad",
+    "name": "Wallet Transfer Service - Local",
+    "description": "Run the requests from top to bottom against the local Express service. The collection creates isolated Alice and Bob identities for each run, captures generated IDs automatically, and exercises successful, replayed, conflicting, and declined transfers.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/health", "host": ["{{baseUrl}}"], "path": ["health"] },
+        "description": "Confirms that the API and PostgreSQL connection are ready."
+      },
+      "response": [],
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('Health check succeeds', function () {",
+            "  pm.response.to.have.status(200);",
+            "  pm.expect(pm.response.json()).to.deep.equal({ status: 'ok' });",
+            "});"
+          ]
+        }
+      }]
+    },
+    {
+      "name": "2. Create Alice Wallet",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const runId = pm.variables.replaceIn('{{$guid}}');",
+              "pm.collectionVariables.set('runId', runId);",
+              "pm.collectionVariables.set('aliceToken', `postman-alice-${runId}`);",
+              "pm.collectionVariables.set('bobToken', `postman-bob-${runId}`);",
+              "pm.collectionVariables.set('idempotencyKey', `postman-transfer-${runId}`);",
+              "pm.collectionVariables.set('declineKey', `postman-decline-${runId}`);",
+              "pm.collectionVariables.unset('aliceWalletId');",
+              "pm.collectionVariables.unset('bobWalletId');",
+              "pm.collectionVariables.unset('transferId');",
+              "pm.collectionVariables.unset('firstTransferResponse');"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Alice wallet is returned', function () {",
+              "  pm.response.to.have.status(200);",
+              "  const wallet = pm.response.json();",
+              "  pm.expect(wallet.id).to.be.a('string').and.not.empty;",
+              "  pm.expect(wallet.user_id).to.eql(pm.collectionVariables.get('aliceToken'));",
+              "  pm.expect(wallet.balance_paise).to.eql('10000');",
+              "  pm.collectionVariables.set('aliceWalletId', wallet.id);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{aliceToken}}", "type": "string" }] },
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json", "type": "text" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"initial_balance_paise\": 10000\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": { "raw": "{{baseUrl}}/wallets", "host": ["{{baseUrl}}"], "path": ["wallets"] },
+        "description": "Starts a fresh local test run, creates Alice's wallet, and saves aliceWalletId."
+      },
+      "response": []
+    },
+    {
+      "name": "3. Create Bob Wallet",
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('Bob wallet is returned', function () {",
+            "  pm.response.to.have.status(200);",
+            "  const wallet = pm.response.json();",
+            "  pm.expect(wallet.id).to.be.a('string').and.not.empty;",
+            "  pm.expect(wallet.user_id).to.eql(pm.collectionVariables.get('bobToken'));",
+            "  pm.expect(wallet.balance_paise).to.eql('500');",
+            "  pm.collectionVariables.set('bobWalletId', wallet.id);",
+            "});"
+          ]
+        }
+      }],
+      "request": {
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{bobToken}}", "type": "string" }] },
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json", "type": "text" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"initial_balance_paise\": 500\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": { "raw": "{{baseUrl}}/wallets", "host": ["{{baseUrl}}"], "path": ["wallets"] },
+        "description": "Creates Bob's destination wallet and saves bobWalletId."
+      },
+      "response": []
+    },
+    {
+      "name": "4. Get Alice Wallet",
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('Alice can read her wallet', function () {",
+            "  pm.response.to.have.status(200);",
+            "  pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('aliceWalletId'));",
+            "});"
+          ]
+        }
+      }],
+      "request": {
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{aliceToken}}", "type": "string" }] },
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/wallets/{{aliceWalletId}}", "host": ["{{baseUrl}}"], "path": ["wallets", "{{aliceWalletId}}"] }
+      },
+      "response": []
+    },
+    {
+      "name": "5. Get Bob Wallet",
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('Bob can read his wallet', function () {",
+            "  pm.response.to.have.status(200);",
+            "  pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('bobWalletId'));",
+            "});"
+          ]
+        }
+      }],
+      "request": {
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{bobToken}}", "type": "string" }] },
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/wallets/{{bobWalletId}}", "host": ["{{baseUrl}}"], "path": ["wallets", "{{bobWalletId}}"] }
+      },
+      "response": []
+    },
+    {
+      "name": "6. Create Transfer",
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('Transfer completes', function () {",
+            "  pm.response.to.have.status(200);",
+            "  const transfer = pm.response.json();",
+            "  pm.expect(transfer.status).to.eql('completed');",
+            "  pm.expect(transfer.amount_paise).to.eql('1250');",
+            "  pm.collectionVariables.set('transferId', transfer.id);",
+            "  pm.collectionVariables.set('firstTransferResponse', JSON.stringify(transfer));",
+            "});"
+          ]
+        }
+      }],
+      "request": {
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{aliceToken}}", "type": "string" }] },
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json", "type": "text" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"from\": \"{{aliceWalletId}}\",\n  \"to\": \"{{bobWalletId}}\",\n  \"amount_paise\": 1250,\n  \"idempotency_key\": \"{{idempotencyKey}}\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": { "raw": "{{baseUrl}}/transfers", "host": ["{{baseUrl}}"], "path": ["transfers"] },
+        "description": "Moves 1250 paise from Alice to Bob and captures transferId."
+      },
+      "response": []
+    },
+    {
+      "name": "7. Replay Transfer (Exactly Once)",
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('Replay returns the identical transfer', function () {",
+            "  pm.response.to.have.status(200);",
+            "  const original = JSON.parse(pm.collectionVariables.get('firstTransferResponse'));",
+            "  pm.expect(pm.response.json()).to.deep.equal(original);",
+            "});"
+          ]
+        }
+      }],
+      "request": {
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{aliceToken}}", "type": "string" }] },
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json", "type": "text" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"from\": \"{{aliceWalletId}}\",\n  \"to\": \"{{bobWalletId}}\",\n  \"amount_paise\": 1250,\n  \"idempotency_key\": \"{{idempotencyKey}}\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": { "raw": "{{baseUrl}}/transfers", "host": ["{{baseUrl}}"], "path": ["transfers"] }
+      },
+      "response": []
+    },
+    {
+      "name": "8. Reuse Key With Different Body (409)",
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('Changed idempotent command conflicts', function () {",
+            "  pm.response.to.have.status(409);",
+            "  pm.expect(pm.response.json().code).to.eql('idempotency_conflict');",
+            "});"
+          ]
+        }
+      }],
+      "request": {
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{aliceToken}}", "type": "string" }] },
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json", "type": "text" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"from\": \"{{aliceWalletId}}\",\n  \"to\": \"{{bobWalletId}}\",\n  \"amount_paise\": 2000,\n  \"idempotency_key\": \"{{idempotencyKey}}\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": { "raw": "{{baseUrl}}/transfers", "host": ["{{baseUrl}}"], "path": ["transfers"] }
+      },
+      "response": []
+    },
+    {
+      "name": "9. Get Transfer as Alice",
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('Source owner can read the transfer', function () {",
+            "  pm.response.to.have.status(200);",
+            "  pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('transferId'));",
+            "});"
+          ]
+        }
+      }],
+      "request": {
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{aliceToken}}", "type": "string" }] },
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/transfers/{{transferId}}", "host": ["{{baseUrl}}"], "path": ["transfers", "{{transferId}}"] }
+      },
+      "response": []
+    },
+    {
+      "name": "10. Get Transfer as Bob",
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('Destination owner can read the transfer', function () {",
+            "  pm.response.to.have.status(200);",
+            "  pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('transferId'));",
+            "});"
+          ]
+        }
+      }],
+      "request": {
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{bobToken}}", "type": "string" }] },
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/transfers/{{transferId}}", "host": ["{{baseUrl}}"], "path": ["transfers", "{{transferId}}"] }
+      },
+      "response": []
+    },
+    {
+      "name": "11. Decline an Overdraft",
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('Overdraft is declined cleanly', function () {",
+            "  pm.response.to.have.status(200);",
+            "  const transfer = pm.response.json();",
+            "  pm.expect(transfer.status).to.eql('declined');",
+            "  pm.expect(transfer.decline_reason).to.eql('insufficient_funds');",
+            "});"
+          ]
+        }
+      }],
+      "request": {
+        "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{aliceToken}}", "type": "string" }] },
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json", "type": "text" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"from\": \"{{aliceWalletId}}\",\n  \"to\": \"{{bobWalletId}}\",\n  \"amount_paise\": 99999999,\n  \"idempotency_key\": \"{{declineKey}}\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "url": { "raw": "{{baseUrl}}/transfers", "host": ["{{baseUrl}}"], "path": ["transfers"] }
+      },
+      "response": []
+    },
+    {
+      "name": "12. Public Domain Logs",
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('Sanitized log feed is available', function () {",
+            "  pm.response.to.have.status(200);",
+            "  pm.expect(pm.response.json().entries).to.be.an('array');",
+            "});"
+          ]
+        }
+      }],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/logs", "host": ["{{baseUrl}}"], "path": ["logs"] }
+      },
+      "response": []
+    },
+    {
+      "name": "13. Prometheus Metrics",
+      "event": [{
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "pm.test('Required metrics are exposed', function () {",
+            "  pm.response.to.have.status(200);",
+            "  const metrics = pm.response.text();",
+            "  pm.expect(metrics).to.include('wallet_http_requests_total');",
+            "  pm.expect(metrics).to.include('wallet_http_request_duration_seconds');",
+            "  pm.expect(metrics).to.include('wallet_http_errors_total');",
+            "  pm.expect(metrics).to.include('wallet_transfers_created_total');",
+            "  pm.expect(metrics).to.include('wallet_transfers_declined_insufficient_funds_total');",
+            "  pm.expect(metrics).to.include('wallet_idempotent_replays_total');",
+            "});"
+          ]
+        }
+      }],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": { "raw": "{{baseUrl}}/metrics", "host": ["{{baseUrl}}"], "path": ["metrics"] }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000", "type": "string" },
+    { "key": "runId", "value": "", "type": "string" },
+    { "key": "aliceToken", "value": "postman-alice-local", "type": "string" },
+    { "key": "bobToken", "value": "postman-bob-local", "type": "string" },
+    { "key": "aliceWalletId", "value": "", "type": "string" },
+    { "key": "bobWalletId", "value": "", "type": "string" },
+    { "key": "transferId", "value": "", "type": "string" },
+    { "key": "idempotencyKey", "value": "postman-transfer-local", "type": "string" },
+    { "key": "declineKey", "value": "postman-decline-local", "type": "string" },
+    { "key": "firstTransferResponse", "value": "", "type": "string" }
+  ]
+}

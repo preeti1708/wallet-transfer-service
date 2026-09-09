@@ -62,6 +62,10 @@ npm run burst -- http://localhost:3000
 
 The script fires 50 concurrent wallet creates, 30 concurrent repeats of one transfer, and 180 contended transfers—including opposite directions and deliberate overdrafts. It exits non-zero if wallet uniqueness, identical idempotent responses, conservation, or non-negative balances fails. Transient transport resets are retried with the same idempotency keys, exercising the retry contract under network failure.
 
+## Postman
+
+Import `postman/Wallet Transfer Service.postman_collection.json` into Postman for local API testing. The collection defaults to `http://localhost:3000`; run its numbered requests in order to create isolated Alice and Bob wallets, capture their IDs, exercise transfer idempotency and overdraft handling, and inspect logs and metrics without copying values manually.
+
 ## Observability
 
 Every request accepts or generates `x-correlation-id`. Logs are newline-delimited JSON and redact authorization values. Domain events include:
