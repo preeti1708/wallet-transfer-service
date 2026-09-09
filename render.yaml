@@ -4,7 +4,6 @@ services:
     runtime: docker
     plan: free
     healthCheckPath: /health
-    maxShutdownDelaySeconds: 30
     envVars:
       - key: DATABASE_URL
         fromDatabase:
