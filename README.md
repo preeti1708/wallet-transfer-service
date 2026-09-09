@@ -2,6 +2,16 @@
 
 A concurrency-safe Express and PostgreSQL API for wallets and peer-to-peer transfers. Money is stored only as integer paise, and PostgreSQL transactions enforce conservation, no overdrafts, exactly-once idempotency, and race-free wallet creation.
 
+## Live deployment
+
+- API: <https://wallet-transfer-api.onrender.com>
+- Health: <https://wallet-transfer-api.onrender.com/health>
+- Public sanitized domain logs: <https://wallet-transfer-api.onrender.com/logs>
+- Prometheus metrics: <https://wallet-transfer-api.onrender.com/metrics>
+- Source: <https://github.com/preeti1708/wallet-transfer-service>
+
+The production burst probe was run against the live API on September 10, 2026. It produced one wallet from 50 concurrent creates, one transfer result from 30 same-key requests, zero failed requests across 180 contended transfers, 20 clean insufficient-funds declines, unchanged total value (`30000` paise before and after), and a minimum balance of `9060` paise.
+
 ## Run with one command
 
 ```bash
@@ -98,8 +108,8 @@ npm run build
 
 ## Deploy on Render
 
-`render.yaml` declares a free Docker web service and free managed PostgreSQL database. Push this repository to a Git provider, create a Render Blueprint from it, and apply the Blueprint. Render injects `DATABASE_URL`; the container runs migrations before accepting traffic, and `/health` verifies database connectivity.
+`render.yaml` declares the deployed free Docker web service and free managed PostgreSQL database. Render injects `DATABASE_URL`; the container runs migrations before accepting traffic, and `/health` verifies database connectivity.
 
-Free Render PostgreSQL expires after 30 days and has no backups, so this configuration is suitable only for the exercise. After deployment, run the burst command against the `onrender.com` URL and use the Render Logs page as the public/live log evidence.
+Free Render PostgreSQL expires after 30 days and has no backups, so this configuration is suitable only for the exercise. The `/logs` endpoint provides public, bounded, sanitized domain-event evidence without exposing bearer tokens or user identities; Render's full operational logs remain restricted to the service owner.
 
 The concise design rationale and AI-use disclosure are in [docs/WRITEUP.md](docs/WRITEUP.md).
