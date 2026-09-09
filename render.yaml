@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: wallet-transfer-api
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    maxShutdownDelaySeconds: 30
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: wallet-transfer-db
+          property: connectionString
+      - key: LOG_LEVEL
+        value: info
+
+databases:
+  - name: wallet-transfer-db
+    plan: free
+    databaseName: wallet
+    user: wallet
+    postgresMajorVersion: "16"
+

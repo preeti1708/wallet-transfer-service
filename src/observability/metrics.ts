@@ -1,5 +1,5 @@
 import type { RequestHandler } from 'express';
-import { Counter, Histogram, Registry } from 'prom-client';
+import { Counter, Histogram, Registry } from '@prometheus-io/client';
 
 export interface Metrics {
   registry: Registry;
@@ -74,4 +74,3 @@ export function createMetrics(): Metrics {
     idempotentReplay: () => replays.inc(),
   };
 }
-

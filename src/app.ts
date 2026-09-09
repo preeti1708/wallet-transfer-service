@@ -64,6 +64,7 @@ export function createApp({ pool, logLevel = 'info', logger = createLogger(logLe
   });
 
   const errorHandler: ErrorRequestHandler = (error: unknown, request, response, _next) => {
+    void _next;
     if (error instanceof ZodError) {
       response.status(400).json({
         code: 'invalid_request',
