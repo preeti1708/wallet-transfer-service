@@ -27,4 +27,3 @@ The image is multi-stage, runs as the non-root `node` user, and includes a datab
 Directed by the human: the goal, TypeScript/Node choice, Express framework, and approval of the proposed architecture. Decided and typed by AI: raw `pg` boundaries, schema details, sorted-lock plus conditional-debit implementation, test strategy, observability wiring, container/Compose assets, Render Blueprint, probe script, and documentation. These choices remain visible in code and should be reviewed and explained by the submitter rather than presented as unaided work.
 
 The declared Render web service and managed PostgreSQL use free plans, so the exercise cost is Rs.0 with no card. The trade-off is that free web instances can sleep and free PostgreSQL expires after 30 days with no backups; it is not a production configuration.
-

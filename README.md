@@ -101,4 +101,3 @@ npm run build
 Free Render PostgreSQL expires after 30 days and has no backups, so this configuration is suitable only for the exercise. After deployment, run the burst command against the `onrender.com` URL and use the Render Logs page as the public/live log evidence.
 
 The concise design rationale and AI-use disclosure are in [docs/WRITEUP.md](docs/WRITEUP.md).
-

@@ -45,4 +45,3 @@ describe('one-command burst probe', () => {
     expect(report.contention.failedRequests).toBe(0);
   });
 });
-
