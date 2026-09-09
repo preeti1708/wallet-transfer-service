@@ -41,6 +41,7 @@ describe('one-command burst probe', () => {
     expect(report.idempotency.destinationBalance).toBe('11000');
     expect(report.contention.totalBefore).toBe('30000');
     expect(report.contention.totalAfter).toBe('30000');
+    expect(report.contention.declinedTransfers).toBe(20);
     expect(report.contention.minimumBalance >= 0n).toBe(true);
     expect(report.contention.failedRequests).toBe(0);
   });

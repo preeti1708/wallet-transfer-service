@@ -79,4 +79,3 @@ export async function getWalletForUser(pool: Pool, walletId: string, userId: str
   if (!wallet) throw new NotFoundError('Wallet');
   return serializeWallet(wallet);
 }
-

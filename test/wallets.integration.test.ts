@@ -88,5 +88,28 @@ describe('wallet API', () => {
     expect(fractional.status).toBe(400);
     expect(negative.status).toBe(400);
   });
-});
 
+  it('returns a stable client error when the JSON body exceeds the request limit', async () => {
+    const app = createApp({ pool, logLevel: 'silent' });
+    const response = await request(app)
+      .post('/wallets')
+      .set('authorization', 'Bearer alice')
+      .set('content-type', 'application/json')
+      .send(JSON.stringify({ padding: 'x'.repeat(17 * 1024) }));
+
+    expect(response.status).toBe(413);
+    expect(response.body).toEqual({ code: 'payload_too_large', message: 'Request body exceeds the 16kb limit' });
+  });
+
+  it('returns a stable client error for malformed JSON', async () => {
+    const app = createApp({ pool, logLevel: 'silent' });
+    const response = await request(app)
+      .post('/wallets')
+      .set('authorization', 'Bearer alice')
+      .set('content-type', 'application/json')
+      .send('{');
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({ code: 'invalid_json', message: 'Request body is not valid JSON' });
+  });
+});

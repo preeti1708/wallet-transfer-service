@@ -72,4 +72,3 @@ describe('conservation under contention', () => {
     expect(counts.rows[0]?.count).toBe('240');
   });
 });
-

@@ -15,4 +15,3 @@ export async function createTestPool(): Promise<Pool> {
 export async function resetDatabase(pool: Pool): Promise<void> {
   await pool.query('TRUNCATE transfers, wallets RESTART IDENTITY CASCADE');
 }
-

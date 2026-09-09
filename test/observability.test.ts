@@ -86,4 +86,3 @@ describe('observability', () => {
     expect(response.text).toContain('wallet_idempotent_replays_total 1');
   });
 });
-

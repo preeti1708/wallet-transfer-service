@@ -226,4 +226,3 @@ Document API examples, one-command startup and burst commands, schema, sorted lo
 Run: `npm test && npm run lint && npm run typecheck && npm run build`
 
 Run when Docker is available: `docker compose up --build -d && npm run burst -- http://localhost:3000 && docker compose down`
-

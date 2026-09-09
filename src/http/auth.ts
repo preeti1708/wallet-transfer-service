@@ -16,4 +16,3 @@ export function parseBearer(header: string | undefined): string {
 export function requireUser(request: Request): string {
   return parseBearer(request.header('authorization'));
 }
-

@@ -30,4 +30,3 @@ export function loadConfig(environment: NodeJS.ProcessEnv): Config {
     logLevel: parsed.data.LOG_LEVEL,
   };
 }
-

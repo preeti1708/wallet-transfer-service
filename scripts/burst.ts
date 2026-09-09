@@ -9,6 +9,7 @@ interface WalletResponse {
 interface TransferResponse {
   id: string;
   status: 'completed' | 'declined';
+  decline_reason: 'insufficient_funds' | null;
 }
 
 export interface BurstReport {
@@ -144,6 +145,17 @@ export async function runBurst(rawBaseUrl: string): Promise<BurstReport> {
       })
       .join('; ');
     throw new Error(`${failedRequests} contention requests failed at the HTTP layer: ${examples}`);
+  }
+  for (const [index, command] of contentionCommands.entries()) {
+    if (command.body.amount_paise !== 50_000) continue;
+    const result = results[index];
+    if (
+      result?.status !== 'fulfilled' ||
+      result.value.status !== 'declined' ||
+      result.value.decline_reason !== 'insufficient_funds'
+    ) {
+      throw new Error(`Deliberate overdraft ${index} was not declined for insufficient funds`);
+    }
   }
   const declinedTransfers = results.filter(
     (result) => result.status === 'fulfilled' && result.value.status === 'declined',

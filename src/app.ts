@@ -20,6 +20,11 @@ export interface CreateAppOptions {
 
 const acceptedCorrelationId = /^[A-Za-z0-9._-]{1,128}$/;
 
+function parserStatus(error: unknown): number | undefined {
+  if (typeof error !== 'object' || error === null || !('status' in error)) return undefined;
+  return typeof error.status === 'number' && error.status >= 400 && error.status < 500 ? error.status : undefined;
+}
+
 export function createApp({ pool, logLevel = 'info', logger = createLogger(logLevel) }: CreateAppOptions): express.Express {
   const app = express();
   const metrics = createMetrics();
@@ -84,6 +89,13 @@ export function createApp({ pool, logLevel = 'info', logger = createLogger(logLe
     }
     if (error instanceof SyntaxError && 'status' in error && error.status === 400) {
       response.status(400).json({ code: 'invalid_json', message: 'Request body is not valid JSON' });
+      return;
+    }
+    const status = parserStatus(error);
+    if (status !== undefined) {
+      const code = status === 413 ? 'payload_too_large' : status === 415 ? 'unsupported_media_type' : 'invalid_request';
+      const message = status === 413 ? 'Request body exceeds the 16kb limit' : 'Request body could not be processed';
+      response.status(status).json({ code, message });
       return;
     }
     request.log.error({ event: 'request.failed', err: error }, 'Unexpected request failure');

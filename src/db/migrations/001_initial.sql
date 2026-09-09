@@ -25,4 +25,3 @@ CREATE TABLE IF NOT EXISTS transfers (
 
 CREATE INDEX IF NOT EXISTS transfers_from_wallet_id_idx ON transfers(from_wallet_id);
 CREATE INDEX IF NOT EXISTS transfers_to_wallet_id_idx ON transfers(to_wallet_id);
-

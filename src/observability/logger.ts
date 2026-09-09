@@ -14,4 +14,3 @@ export function createLogger(level: string, destination?: DestinationStream): Lo
     destination,
   );
 }
-
