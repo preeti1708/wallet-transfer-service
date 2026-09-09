@@ -6,7 +6,7 @@ import type { Pool } from 'pg';
 import { loadConfig } from '../config.js';
 import { createPool } from './pool.js';
 
-const migrations = ['001_initial.sql'] as const;
+const migrations = ['001_initial.sql', '002_defer_transfer_wallet_foreign_keys.sql'] as const;
 
 export async function runMigrations(pool: Pool): Promise<void> {
   const client = await pool.connect();
@@ -57,4 +57,3 @@ async function main(): Promise<void> {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   await main();
 }
-

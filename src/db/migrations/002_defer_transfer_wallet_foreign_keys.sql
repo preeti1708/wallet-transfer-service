@@ -1,0 +1,5 @@
+ALTER TABLE transfers
+  ALTER CONSTRAINT transfers_from_wallet_id_fkey DEFERRABLE INITIALLY DEFERRED;
+
+ALTER TABLE transfers
+  ALTER CONSTRAINT transfers_to_wallet_id_fkey DEFERRABLE INITIALLY DEFERRED;

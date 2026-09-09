@@ -14,7 +14,7 @@ I rejected reading a balance in Node and writing a replacement because concurren
 
 ## Exactly-once placement
 
-PostgreSQL—not process memory—enforces global uniqueness on `transfers.idempotency_key`. The unique row is inserted in the same transaction as the debit and credit. Concurrent duplicates wait on that unique constraint; after the winner commits, losers roll back their attempted transaction and read the committed result using their already checked-out connection. That last detail avoids connection-pool starvation during retry storms. The original `from`, `to`, and amount are stored and compared; a changed request returns HTTP 409 instead of reusing or applying it.
+PostgreSQL—not process memory—enforces global uniqueness on `transfers.idempotency_key`. The unique row is inserted in the same transaction as the debit and credit, before wallet locks; deferrable wallet foreign keys allow missing-wallet validation to remain inside that transaction. Concurrent duplicates wait on the unique constraint; after the winner commits, losers roll back their attempted transaction and read the committed result using their already checked-out connection. That last detail avoids connection-pool starvation during retry storms. The original `from`, `to`, and amount are stored and compared; a changed request returns HTTP 409 instead of reusing or applying it, and replay lookup rechecks source ownership.
 
 ## Consistency, availability, and operation
 

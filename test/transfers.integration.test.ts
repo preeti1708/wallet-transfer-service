@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+
 import request from 'supertest';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { Express } from 'express';
@@ -126,6 +128,38 @@ describe('transfer API', () => {
     );
   });
 
+  it('returns the idempotency conflict before validating a changed destination', async () => {
+    const from = await createWallet(app, 'alice', 10_000);
+    const to = await createWallet(app, 'bob', 0);
+    const first = await request(app)
+      .post('/transfers')
+      .set('authorization', 'Bearer alice')
+      .send({ from, to, amount_paise: 100, idempotency_key: 'conflict-before-wallet' });
+    const conflict = await request(app)
+      .post('/transfers')
+      .set('authorization', 'Bearer alice')
+      .send({ from, to: randomUUID(), amount_paise: 100, idempotency_key: 'conflict-before-wallet' });
+
+    expect(first.status).toBe(200);
+    expect(conflict.status).toBe(409);
+    expect(conflict.body.code).toBe('idempotency_conflict');
+  });
+
+  it('does not let another caller retrieve a transfer by replaying its command', async () => {
+    const from = await createWallet(app, 'alice', 10_000);
+    const to = await createWallet(app, 'bob', 0);
+    const command = { from, to, amount_paise: 100, idempotency_key: 'private-replay' };
+    await request(app).post('/transfers').set('authorization', 'Bearer alice').send(command);
+
+    const replay = await request(app)
+      .post('/transfers')
+      .set('authorization', 'Bearer mallory')
+      .send(command);
+
+    expect(replay.status).toBe(403);
+    expect(replay.body.code).toBe('forbidden');
+  });
+
   it('rejects unauthorized debits and malformed money commands', async () => {
     const from = await createWallet(app, 'alice', 100);
     const to = await createWallet(app, 'bob', 0);
@@ -147,4 +181,3 @@ describe('transfer API', () => {
     expect(self.status).toBe(400);
   });
 });
-

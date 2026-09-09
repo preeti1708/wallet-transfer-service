@@ -24,7 +24,7 @@ JSON responses use decimal strings for `balance_paise` and `amount_paise`. Postg
 ## Transfer Transaction
 
 1. Begin a PostgreSQL transaction.
-2. Insert the transfer row as the idempotency reservation. A uniqueness conflict rolls back the local transaction, reads the committed original row, compares all request fields, and returns either the original response or HTTP 409.
+2. Insert the transfer row as the idempotency reservation. Its wallet foreign keys are deferrable so missing-wallet validation can follow without weakening key-conflict precedence. A uniqueness conflict rolls back the local transaction, verifies source ownership, reads the committed original row, compares all request fields, and returns either the original response or HTTP 409.
 3. Lock both wallet rows using one `SELECT ... WHERE id = ANY($1) ORDER BY id FOR UPDATE`. Every transfer therefore acquires locks in deterministic UUID order, including simultaneous A-to-B and B-to-A requests.
 4. Validate that both wallets exist and the source belongs to the caller.
 5. If the source balance is insufficient, update the reserved transfer to `declined`, commit it, and return that durable result without changing either balance.
@@ -57,4 +57,3 @@ Unit tests cover authentication, validation, and error mapping. Integration test
 Explicit `pg` transactions are preferred over an ORM so the locking and atomicity mechanisms are visible. Serializable isolation was rejected as heavier than necessary and would require retry loops. Unsorted row locks were rejected because opposite-direction transfers can deadlock. Application-memory idempotency was rejected because it fails across processes and restarts.
 
 The future reversal/refund prompt contained in the internal evaluator rubric is intentionally excluded: it is an interviewer instruction for a later round, not a requirement of the current build.
-

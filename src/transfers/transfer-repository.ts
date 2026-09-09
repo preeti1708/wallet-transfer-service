@@ -21,6 +21,10 @@ interface LockedWalletRow {
   user_id: string;
 }
 
+interface ReplayRow extends TransferRow {
+  source_user_id: string;
+}
+
 export interface Transfer {
   id: string;
   idempotency_key: string;
@@ -68,17 +72,22 @@ function isUniqueViolation(error: unknown): boolean {
 }
 
 async function readReplay(client: PoolClient, command: TransferCommand): Promise<TransferResult> {
-  const result = await client.query<TransferRow>(
+  const result = await client.query<ReplayRow>(
     `
-      SELECT id, idempotency_key, from_wallet_id, to_wallet_id, amount_paise,
-             status, decline_reason, created_at, updated_at
-      FROM transfers
-      WHERE idempotency_key = $1
+      SELECT t.id, t.idempotency_key, t.from_wallet_id, t.to_wallet_id, t.amount_paise,
+             t.status, t.decline_reason, t.created_at, t.updated_at,
+             source.user_id AS source_user_id
+      FROM transfers t
+      JOIN wallets source ON source.id = t.from_wallet_id
+      WHERE t.idempotency_key = $1
     `,
     [command.idempotencyKey],
   );
   const existing = result.rows[0];
   if (!existing) throw new Error('Idempotency conflict resolved without a visible transfer');
+  if (existing.source_user_id !== command.userId) {
+    throw new ForbiddenError('Only the source wallet owner may transfer funds');
+  }
 
   const sameRequest =
     existing.from_wallet_id === command.from &&
@@ -116,6 +125,16 @@ export async function createTransfer(pool: Pool, command: TransferCommand): Prom
     await client.query('BEGIN');
     transactionOpen = true;
 
+    const transferId = randomUUID();
+    await client.query(
+      `
+        INSERT INTO transfers (
+          id, idempotency_key, from_wallet_id, to_wallet_id, amount_paise, status
+        ) VALUES ($1, $2, $3, $4, $5, 'pending')
+      `,
+      [transferId, command.idempotencyKey, command.from, command.to, command.amountPaise.toString()],
+    );
+
     const locked = await client.query<LockedWalletRow>(
       `
         SELECT id, user_id
@@ -129,16 +148,6 @@ export async function createTransfer(pool: Pool, command: TransferCommand): Prom
     if (locked.rowCount !== 2) throw new NotFoundError('Wallet');
     const source = locked.rows.find((wallet) => wallet.id === command.from);
     if (source?.user_id !== command.userId) throw new ForbiddenError('Only the source wallet owner may transfer funds');
-
-    const transferId = randomUUID();
-    await client.query(
-      `
-        INSERT INTO transfers (
-          id, idempotency_key, from_wallet_id, to_wallet_id, amount_paise, status
-        ) VALUES ($1, $2, $3, $4, $5, 'pending')
-      `,
-      [transferId, command.idempotencyKey, command.from, command.to, command.amountPaise.toString()],
-    );
 
     const debit = await client.query(
       `
