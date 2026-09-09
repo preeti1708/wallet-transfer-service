@@ -18,6 +18,10 @@ export function registerWalletRoutes(router: Router, pool: Pool): void {
     const userId = requireUser(request);
     const body = createWalletBody.parse(request.body ?? {});
     const result = await getOrCreateWallet(pool, userId, body.initial_balance_paise);
+    request.log.info(
+      { event: result.created ? 'wallet.created' : 'wallet.replay', wallet_id: result.wallet.id },
+      result.created ? 'Wallet created' : 'Existing wallet returned',
+    );
     response.status(200).json(result.wallet);
   });
 
@@ -27,4 +31,3 @@ export function registerWalletRoutes(router: Router, pool: Pool): void {
     response.status(200).json(await getWalletForUser(pool, id, userId));
   });
 }
-

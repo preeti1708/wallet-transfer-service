@@ -1,19 +1,49 @@
+import { randomUUID } from 'node:crypto';
+
 import express, { type ErrorRequestHandler } from 'express';
+import type { Logger } from 'pino';
+import { pinoHttp } from 'pino-http';
 import { ZodError } from 'zod';
 import type { Pool } from 'pg';
 
 import { AppError } from './http/errors.js';
+import { createLogger } from './observability/logger.js';
+import { createMetrics } from './observability/metrics.js';
 import { registerTransferRoutes } from './transfers/transfer-routes.js';
 import { registerWalletRoutes } from './wallets/wallet-routes.js';
 
 export interface CreateAppOptions {
   pool: Pool;
   logLevel?: string;
+  logger?: Logger;
 }
 
-export function createApp({ pool }: CreateAppOptions): express.Express {
+const acceptedCorrelationId = /^[A-Za-z0-9._-]{1,128}$/;
+
+export function createApp({ pool, logLevel = 'info', logger = createLogger(logLevel) }: CreateAppOptions): express.Express {
   const app = express();
+  const metrics = createMetrics();
   app.disable('x-powered-by');
+  app.use(
+    pinoHttp({
+      logger,
+      genReqId(request, response) {
+        const requested = request.headers['x-correlation-id'];
+        const id = typeof requested === 'string' && acceptedCorrelationId.test(requested) ? requested : randomUUID();
+        response.setHeader('x-correlation-id', id);
+        return id;
+      },
+      customProps(request) {
+        return { correlation_id: request.id };
+      },
+      customLogLevel(_request, response, error) {
+        if (error || response.statusCode >= 500) return 'error';
+        if (response.statusCode >= 400) return 'warn';
+        return 'info';
+      },
+    }),
+  );
+  app.use(metrics.middleware);
   app.use(express.json({ limit: '16kb' }));
 
   app.get('/health', async (_request, response) => {
@@ -21,14 +51,19 @@ export function createApp({ pool }: CreateAppOptions): express.Express {
     response.status(200).json({ status: 'ok' });
   });
 
+  app.get('/metrics', async (_request, response) => {
+    response.setHeader('content-type', metrics.registry.contentType);
+    response.status(200).send(await metrics.registry.metrics());
+  });
+
   registerWalletRoutes(app, pool);
-  registerTransferRoutes(app, pool);
+  registerTransferRoutes(app, pool, metrics);
 
   app.use((_request, response) => {
     response.status(404).json({ code: 'not_found', message: 'Route was not found' });
   });
 
-  const errorHandler: ErrorRequestHandler = (error: unknown, _request, response, _next) => {
+  const errorHandler: ErrorRequestHandler = (error: unknown, request, response, _next) => {
     if (error instanceof ZodError) {
       response.status(400).json({
         code: 'invalid_request',
@@ -38,6 +73,7 @@ export function createApp({ pool }: CreateAppOptions): express.Express {
       return;
     }
     if (error instanceof AppError) {
+      request.log.warn({ event: 'request.rejected', error_code: error.code }, error.message);
       response.status(error.statusCode).json({
         code: error.code,
         message: error.message,
@@ -49,6 +85,7 @@ export function createApp({ pool }: CreateAppOptions): express.Express {
       response.status(400).json({ code: 'invalid_json', message: 'Request body is not valid JSON' });
       return;
     }
+    request.log.error({ event: 'request.failed', err: error }, 'Unexpected request failure');
     response.status(500).json({ code: 'internal_error', message: 'An unexpected error occurred' });
   };
   app.use(errorHandler);

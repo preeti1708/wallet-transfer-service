@@ -3,6 +3,7 @@ import type { Pool } from 'pg';
 import { z } from 'zod';
 
 import { requireUser } from '../http/auth.js';
+import type { Metrics } from '../observability/metrics.js';
 import { createTransfer, getTransferForUser } from './transfer-repository.js';
 
 const transferBody = z
@@ -20,7 +21,7 @@ const transferBody = z
 
 const transferParams = z.object({ id: z.string().uuid() });
 
-export function registerTransferRoutes(router: Router, pool: Pool): void {
+export function registerTransferRoutes(router: Router, pool: Pool, metrics: Metrics): void {
   router.post('/transfers', async (request, response) => {
     const userId = requireUser(request);
     const body = transferBody.parse(request.body);
@@ -31,6 +32,36 @@ export function registerTransferRoutes(router: Router, pool: Pool): void {
       amountPaise: body.amount_paise,
       idempotencyKey: body.idempotency_key,
     });
+    if (result.replay) {
+      metrics.idempotentReplay();
+      request.log.info(
+        { event: 'transfer.idempotent_replay', transfer_id: result.transfer.id },
+        'Idempotent transfer result returned',
+      );
+    } else {
+      metrics.transferCreated();
+      request.log.info({ event: 'transfer.created', transfer_id: result.transfer.id }, 'Transfer created');
+      if (result.transfer.status === 'declined') {
+        metrics.transferDeclinedInsufficientFunds();
+        request.log.info(
+          {
+            event: 'transfer.declined',
+            transfer_id: result.transfer.id,
+            reason: result.transfer.decline_reason,
+          },
+          'Transfer declined',
+        );
+      } else {
+        request.log.info(
+          { event: 'transfer.debited', transfer_id: result.transfer.id, wallet_id: result.transfer.from },
+          'Source wallet debited',
+        );
+        request.log.info(
+          { event: 'transfer.credited', transfer_id: result.transfer.id, wallet_id: result.transfer.to },
+          'Destination wallet credited',
+        );
+      }
+    }
     response.status(200).json(result.transfer);
   });
 
@@ -40,4 +71,3 @@ export function registerTransferRoutes(router: Router, pool: Pool): void {
     response.status(200).json(await getTransferForUser(pool, id, userId));
   });
 }
-
