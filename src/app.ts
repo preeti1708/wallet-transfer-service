@@ -3,6 +3,7 @@ import { ZodError } from 'zod';
 import type { Pool } from 'pg';
 
 import { AppError } from './http/errors.js';
+import { registerTransferRoutes } from './transfers/transfer-routes.js';
 import { registerWalletRoutes } from './wallets/wallet-routes.js';
 
 export interface CreateAppOptions {
@@ -21,6 +22,7 @@ export function createApp({ pool }: CreateAppOptions): express.Express {
   });
 
   registerWalletRoutes(app, pool);
+  registerTransferRoutes(app, pool);
 
   app.use((_request, response) => {
     response.status(404).json({ code: 'not_found', message: 'Route was not found' });
@@ -53,4 +55,3 @@ export function createApp({ pool }: CreateAppOptions): express.Express {
 
   return app;
 }
-
