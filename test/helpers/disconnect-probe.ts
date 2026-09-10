@@ -2,7 +2,7 @@ import pg from 'pg';
 import { createPool } from '../../src/db/pool.js';
 
 // A child process catches unhandled pg EventEmitter errors as a nonzero exit.
-const pool = createPool(process.env.TEST_DATABASE_URL!);
+const pool = createPool(process.env.TEST_DATABASE_URL!, 20);
 const admin = new pg.Pool({ connectionString: process.env.TEST_DATABASE_URL });
 const client = await pool.connect();
 const pid = (await client.query('SELECT pg_backend_pid() AS pid')).rows[0].pid as number;

@@ -2,7 +2,9 @@ import { randomUUID } from 'node:crypto';
 
 import type { Pool, PoolClient } from 'pg';
 
+import { withPoolClient } from '../db/instrumented-client.js';
 import { ConflictError, ForbiddenError, NotFoundError } from '../http/errors.js';
+import type { ApiStage, RequestTelemetry } from '../observability/request-telemetry.js';
 
 interface TransferRow {
   id: string;
@@ -73,8 +75,20 @@ function isUniqueViolation(error: unknown): boolean {
     && 'constraint' in error && error.constraint === 'transfers_idempotency_key_key';
 }
 
-async function readReplay(client: PoolClient, command: TransferCommand): Promise<TransferResult> {
-  const result = await client.query<ReplayRow>(
+function measure<T>(
+  telemetry: RequestTelemetry | undefined,
+  stage: ApiStage,
+  operation: () => Promise<T>,
+): Promise<T> {
+  return telemetry?.measure(stage, operation) ?? operation();
+}
+
+async function readReplay(
+  client: PoolClient,
+  command: TransferCommand,
+  telemetry?: RequestTelemetry,
+): Promise<TransferResult> {
+  const result = await measure(telemetry, 'database.idempotency.read', () => client.query<ReplayRow>(
     `
       SELECT t.id, t.idempotency_key, t.from_wallet_id, t.to_wallet_id, t.amount_paise,
              t.status, t.decline_reason, t.created_at, t.updated_at,
@@ -84,7 +98,7 @@ async function readReplay(client: PoolClient, command: TransferCommand): Promise
       WHERE t.idempotency_key = $1
     `,
     [command.idempotencyKey],
-  );
+  ));
   const existing = result.rows[0];
   if (!existing) throw new Error('Idempotency conflict resolved without a visible transfer');
   if (existing.source_user_id !== command.userId) {
@@ -105,8 +119,12 @@ async function readReplay(client: PoolClient, command: TransferCommand): Promise
   return { transfer: serializeTransfer(existing), replay: true };
 }
 
-async function finishTransfer(client: PoolClient, transferId: string): Promise<Transfer> {
-  const result = await client.query<TransferRow>(
+async function finishTransfer(
+  client: PoolClient,
+  transferId: string,
+  telemetry?: RequestTelemetry,
+): Promise<Transfer> {
+  const result = await measure(telemetry, 'database.transfer.read', () => client.query<TransferRow>(
     `
       SELECT id, idempotency_key, from_wallet_id, to_wallet_id, amount_paise,
              status, decline_reason, created_at, updated_at
@@ -114,31 +132,35 @@ async function finishTransfer(client: PoolClient, transferId: string): Promise<T
       WHERE id = $1
     `,
     [transferId],
-  );
+  ));
   const transfer = result.rows[0];
   if (!transfer) throw new Error('Committed transfer row was not found');
   return serializeTransfer(transfer);
 }
 
-export async function createTransfer(pool: Pool, command: TransferCommand): Promise<TransferResult> {
-  const client = await pool.connect();
+export async function createTransfer(
+  pool: Pool,
+  command: TransferCommand,
+  telemetry?: RequestTelemetry,
+): Promise<TransferResult> {
+  const client = await measure(telemetry, 'database.pool.acquire', () => pool.connect());
   let transactionOpen = false;
   let discardClient = false;
   try {
-    await client.query('BEGIN');
+    await measure(telemetry, 'database.transaction.begin', () => client.query('BEGIN'));
     transactionOpen = true;
 
     const transferId = randomUUID();
-    await client.query(
+    await measure(telemetry, 'database.idempotency.reserve', () => client.query(
       `
         INSERT INTO transfers (
           id, idempotency_key, from_wallet_id, to_wallet_id, amount_paise, status
         ) VALUES ($1, $2, $3, $4, $5, 'pending')
       `,
       [transferId, command.idempotencyKey, command.from, command.to, command.amountPaise.toString()],
-    );
+    ));
 
-    const locked = await client.query<LockedWalletRow>(
+    const locked = await measure(telemetry, 'database.wallet.lock', () => client.query<LockedWalletRow>(
       `
         SELECT id, user_id, balance_paise
         FROM wallets
@@ -147,7 +169,7 @@ export async function createTransfer(pool: Pool, command: TransferCommand): Prom
         FOR UPDATE
       `,
       [[command.from, command.to]],
-    );
+    ));
     if (locked.rowCount !== 2) throw new NotFoundError('Wallet');
     const source = locked.rows.find((wallet) => wallet.id === command.from);
     if (source?.user_id !== command.userId) throw new ForbiddenError('Only the source wallet owner may transfer funds');
@@ -158,49 +180,53 @@ export async function createTransfer(pool: Pool, command: TransferCommand): Prom
     const destinationOverflow = BigInt(source.balance_paise) >= amount
       && BigInt(destination.balance_paise) > 9_223_372_036_854_775_807n - amount;
 
-    const debit = destinationOverflow ? { rowCount: 0 } : await client.query(
+    const debit = destinationOverflow ? { rowCount: 0 } : await measure(telemetry, 'database.wallet.debit', () => client.query(
       `
         UPDATE wallets
         SET balance_paise = balance_paise - $1, updated_at = now()
         WHERE id = $2 AND balance_paise >= $1
       `,
       [command.amountPaise.toString(), command.from],
-    );
+    ));
 
     if (debit.rowCount === 0) {
-      await client.query(
+      await measure(telemetry, 'database.transfer.finalize', () => client.query(
         `
           UPDATE transfers
           SET status = 'declined', decline_reason = $2, updated_at = now()
           WHERE id = $1
         `,
         [transferId, destinationOverflow ? 'destination_balance_limit' : 'insufficient_funds'],
-      );
+      ));
     } else {
-      await client.query(
+      await measure(telemetry, 'database.wallet.credit', () => client.query(
         `
           UPDATE wallets
           SET balance_paise = balance_paise + $1, updated_at = now()
           WHERE id = $2
         `,
         [command.amountPaise.toString(), command.to],
-      );
-      await client.query(
+      ));
+      await measure(telemetry, 'database.transfer.finalize', () => client.query(
         `UPDATE transfers SET status = 'completed', updated_at = now() WHERE id = $1`,
         [transferId],
-      );
+      ));
     }
 
-    const transfer = await finishTransfer(client, transferId);
-    await client.query('COMMIT');
+    const transfer = await finishTransfer(client, transferId, telemetry);
+    await measure(telemetry, 'database.transaction.commit', () => client.query('COMMIT'));
     transactionOpen = false;
     return { transfer, replay: false };
   } catch (error) {
     if (transactionOpen) {
-      try { await client.query('ROLLBACK'); } catch { discardClient = true; }
+      try {
+        await measure(telemetry, 'database.transaction.rollback', () => client.query('ROLLBACK'));
+      } catch {
+        discardClient = true;
+      }
     }
     if (!discardClient && isUniqueViolation(error)) {
-      return await readReplay(client, command);
+      return await readReplay(client, command, telemetry);
     }
     throw error;
   } finally {
@@ -208,19 +234,27 @@ export async function createTransfer(pool: Pool, command: TransferCommand): Prom
   }
 }
 
-export async function getTransferForUser(pool: Pool, transferId: string, userId: string): Promise<Transfer> {
-  const result = await pool.query<TransferRow>(
-    `
-      SELECT t.id, t.idempotency_key, t.from_wallet_id, t.to_wallet_id, t.amount_paise,
-             t.status, t.decline_reason, t.created_at, t.updated_at
-      FROM transfers t
-      JOIN wallets source ON source.id = t.from_wallet_id
-      JOIN wallets destination ON destination.id = t.to_wallet_id
-      WHERE t.id = $1 AND (source.user_id = $2 OR destination.user_id = $2)
-    `,
-    [transferId, userId],
-  );
-  const transfer = result.rows[0];
-  if (!transfer) throw new NotFoundError('Transfer');
-  return serializeTransfer(transfer);
+export async function getTransferForUser(
+  pool: Pool,
+  transferId: string,
+  userId: string,
+  telemetry?: RequestTelemetry,
+): Promise<Transfer> {
+  return withPoolClient(pool, telemetry, async client => {
+    const operation = () => client.query<TransferRow>(
+      `
+        SELECT t.id, t.idempotency_key, t.from_wallet_id, t.to_wallet_id, t.amount_paise,
+               t.status, t.decline_reason, t.created_at, t.updated_at
+        FROM transfers t
+        JOIN wallets source ON source.id = t.from_wallet_id
+        JOIN wallets destination ON destination.id = t.to_wallet_id
+        WHERE t.id = $1 AND (source.user_id = $2 OR destination.user_id = $2)
+      `,
+      [transferId, userId],
+    );
+    const result = await measure(telemetry, 'database.transfer.read', operation);
+    const transfer = result.rows[0];
+    if (!transfer) throw new NotFoundError('Transfer');
+    return serializeTransfer(transfer);
+  });
 }

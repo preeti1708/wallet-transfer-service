@@ -44,6 +44,7 @@ DATABASE_URL=postgresql://localhost/wallet_dev npm run dev
 | `DATABASE_URL` | Required direct PostgreSQL connection URL. Keep it secret; never commit `.env`. |
 | `HOST`, `PORT` | `0.0.0.0`, `3000`. Render supplies `PORT`. |
 | `LOG_LEVEL` | `info`; accepts standard Pino levels or `silent`. |
+| `DATABASE_POOL_MAX` | `40`; constrained to 1–40 so two zero-downtime deployment instances remain below the free PostgreSQL 100-connection limit. |
 | `SOURCE_REVISION` | Optional Git SHA embedded in the image or supplied at runtime. |
 | `RENDER_GIT_COMMIT` | Render-supplied source SHA; used when `SOURCE_REVISION` is empty. |
 | `TEST_DATABASE_URL` | Disposable database whose name ends in `_test`; tests truncate it. |
@@ -127,7 +128,9 @@ This archives HEAD into a fresh directory, installs dependencies in Node 24, run
 
 Structured JSON request and domain logs accept a safe `x-correlation-id` (1–128 letters/digits/`.`/`_`/`-`) or generate a UUID. Request logs omit URL/query/header/body data; error logs expose only safe error codes. Domain events emitted after commit include `transfer.created`, `transfer.debited`, `transfer.credited`, `transfer.declined`, and `transfer.idempotent_replay`.
 
-`/logs` returns at most 200 recent sanitized domain entries with `Cache-Control: no-store`. It includes event/correlation/transfer identifiers and outcomes, excluding identities, wallet IDs, amounts, bodies and credentials. It is an ephemeral, single-process demonstration feed; snapshots retained in verification evidence preserve burst observations. Private operational logs remain available through Render. Do not place sensitive information in correlation IDs.
+Every response also emits one sanitized `request.performance` entry. It contains the correlation ID, route template, method, status, total `duration_ms`, and a `stages_ms` breakdown. `database.pool.acquire` isolates connection-pool queue time; the remaining database stages isolate the health check, wallet insert/read, transaction begin/commit/rollback, idempotency reserve/read, wallet lock/debit/credit, and transfer finalize/read operations. `application.other` is the non-overlapping remainder of total server time, covering routing, JSON parsing, validation, serialization, and logging. Stage values sum to total duration, subject to millisecond rounding.
+
+`/logs` returns at most 200 recent sanitized domain and performance entries with `Cache-Control: no-store`. It includes event/correlation/transfer identifiers, outcomes, and fixed-name timing stages, excluding identities, wallet IDs, amounts, bodies and credentials. It is an ephemeral, single-process demonstration feed; snapshots retained in verification evidence preserve burst observations. Private operational logs remain available through Render. Do not place sensitive information in correlation IDs.
 
 `/metrics` uses bounded method, route-template and HTTP-status labels; no user, key or raw-path labels. PromQL examples for a Prometheus scraper:
 
@@ -138,6 +141,12 @@ sum(rate(wallet_http_requests_total{route=~"/wallets.*|/transfers.*"}[5m]))
 sum(rate(wallet_http_requests_total{status_code=~"5.."}[5m])) / sum(rate(wallet_http_requests_total[5m]))
 # Server-side transfer p99, including pool/lock waits but excluding network/cold-start.
 histogram_quantile(0.99, sum by (le) (rate(wallet_http_request_duration_seconds_bucket{route="/transfers"}[5m])))
+# Per-stage transfer p99: compare database.pool.acquire with database.wallet.lock.
+histogram_quantile(0.99, sum by (le, stage) (rate(wallet_api_stage_duration_seconds_bucket{route="/transfers"}[5m])))
+# Per-stage mean duration by route.
+sum by (route, stage) (rate(wallet_api_stage_duration_seconds_sum[5m]))
+/
+sum by (route, stage) (rate(wallet_api_stage_duration_seconds_count[5m]))
 # Committed outcomes and replay rates.
 sum(rate(wallet_transfers_created_total[5m]))
 sum(rate(wallet_transfers_declined_insufficient_funds_total[5m]))
@@ -145,6 +154,8 @@ sum(rate(wallet_idempotent_replays_total[5m]))
 ```
 
 `wallet_http_errors_total` counts 4xx and 5xx; domain declines remain HTTP 200. Histograms and counters are process-local and reset on restart. Finite latency buckets extend through 60 seconds after the first live burst exceeded the original 5-second maximum. Retained verification includes histogram tail coverage; client p99 is a separate measurement. Logs and counters can be lost in a crash after commit and are not the financial source of truth.
+
+The application pool is capped at 40 connections. Render's free PostgreSQL plan permits 100, while zero-downtime deploys temporarily run the old and new service instances together. Two full pools therefore consume at most 80 connections and retain 20 connections of operational headroom. Increasing the pool moves some waiting from the application queue into PostgreSQL; it does not remove wallet-row contention.
 
 ## Deployment and ₹0 limits
 

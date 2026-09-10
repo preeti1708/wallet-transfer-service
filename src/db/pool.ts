@@ -3,12 +3,15 @@ import { createLogger } from '../observability/logger.js';
 
 const { Pool } = pg;
 
-export function createPool(databaseUrl: string): pg.Pool {
+export function createPool(databaseUrl: string, maxConnections = 40): pg.Pool {
+  if (!Number.isSafeInteger(maxConnections) || maxConnections < 1 || maxConnections > 40) {
+    throw new Error('Database pool size must be an integer from 1 to 40');
+  }
   const logger = createLogger('warn');
   const pool = new Pool({
     connectionString: databaseUrl,
     application_name: 'wallet-transfer-service',
-    max: 20,
+    max: maxConnections,
     idleTimeoutMillis: 30_000,
     // This also bounds the pool's acquisition queue. Free-tier contention can
     // take longer than five seconds even when each transaction is healthy.

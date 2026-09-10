@@ -47,7 +47,7 @@ export async function runMigrations(pool: Pool): Promise<void> {
 
 async function main(): Promise<void> {
   const config = loadConfig(process.env);
-  const pool = createPool(config.databaseUrl);
+  const pool = createPool(config.databaseUrl, config.databasePoolMax);
   try {
     await runMigrations(pool);
   } finally {

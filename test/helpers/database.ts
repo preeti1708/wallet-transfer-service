@@ -10,8 +10,8 @@ if (!decodeURIComponent(new URL(testDatabaseUrl).pathname).endsWith('_test')) {
   throw new Error('Integration tests truncate data; TEST_DATABASE_URL must name a disposable database ending in _test');
 }
 
-export async function createTestPool(): Promise<Pool> {
-  const pool = createPool(testDatabaseUrl);
+export async function createTestPool(maxConnections = 20): Promise<Pool> {
+  const pool = createPool(testDatabaseUrl, maxConnections);
   await runMigrations(pool);
   return pool;
 }

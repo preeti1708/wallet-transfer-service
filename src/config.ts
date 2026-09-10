@@ -7,6 +7,7 @@ const environmentSchema = z.object({
   HOST: z.string().min(1).default('0.0.0.0'),
   PORT: z.coerce.number().int().positive().max(65_535).default(3000),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+  DATABASE_POOL_MAX: z.coerce.number().int().positive().max(40).default(40),
 });
 
 export interface Config {
@@ -14,6 +15,7 @@ export interface Config {
   host: string;
   port: number;
   logLevel: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace' | 'silent';
+  databasePoolMax: number;
 }
 
 export function loadConfig(environment: NodeJS.ProcessEnv): Config {
@@ -28,5 +30,6 @@ export function loadConfig(environment: NodeJS.ProcessEnv): Config {
     host: parsed.data.HOST,
     port: parsed.data.PORT,
     logLevel: parsed.data.LOG_LEVEL,
+    databasePoolMax: parsed.data.DATABASE_POOL_MAX,
   };
 }

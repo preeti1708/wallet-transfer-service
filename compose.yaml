@@ -26,6 +26,7 @@ services:
       HOST: 0.0.0.0
       PORT: 3000
       LOG_LEVEL: info
+      DATABASE_POOL_MAX: ${DATABASE_POOL_MAX:-40}
     depends_on:
       postgres:
         condition: service_healthy

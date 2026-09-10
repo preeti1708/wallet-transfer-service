@@ -6,6 +6,26 @@ import { createTestPool, resetDatabase, testDatabaseUrl } from './helpers/databa
 import { runMigrations } from '../src/db/migrate.js';
 import request from 'supertest';
 import { createApp } from '../src/app.js';
+import { createPool } from '../src/db/pool.js';
+
+it('supports two overlapping 40-connection service pools without exhausting PostgreSQL', async () => {
+  const oldInstance = createPool(testDatabaseUrl, 40);
+  const newInstance = createPool(testDatabaseUrl, 40);
+  expect(oldInstance.options.max).toBe(40);
+  expect(newInstance.options.max).toBe(40);
+  const clients = await Promise.all([
+    ...Array.from({ length: 40 }, () => oldInstance.connect()),
+    ...Array.from({ length: 40 }, () => newInstance.connect()),
+  ]);
+  try {
+    const results = await Promise.all(clients.map(client => client.query<{ ready: number }>('SELECT 1 AS ready')));
+    expect(results).toHaveLength(80);
+    expect(results.every(result => result.rows[0]?.ready === 1)).toBe(true);
+  } finally {
+    for (const client of clients) client.release();
+    await Promise.all([oldInstance.end(), newInstance.end()]);
+  }
+});
 
 it('lets a queued wallet create survive a five-second contention interval', async () => {
   const pool = await createTestPool();

@@ -6,7 +6,7 @@ import { createLogger } from './observability/logger.js';
 import { createPublicLogStore } from './observability/public-log-store.js';
 
 const config = loadConfig(process.env);
-const pool = createPool(config.databaseUrl);
+const pool = createPool(config.databaseUrl, config.databasePoolMax);
 const publicLogs = createPublicLogStore();
 const logger = createLogger(config.logLevel, undefined, publicLogs);
 

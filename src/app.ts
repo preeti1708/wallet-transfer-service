@@ -7,9 +7,11 @@ import { ZodError } from 'zod';
 import type { Pool } from 'pg';
 
 import { AppError } from './http/errors.js';
+import { withPoolClient } from './db/instrumented-client.js';
 import { createLogger } from './observability/logger.js';
 import { createMetrics } from './observability/metrics.js';
 import { createPublicLogStore, type PublicLogStore } from './observability/public-log-store.js';
+import { createRequestTelemetryMiddleware, telemetryFor } from './observability/request-telemetry.js';
 import { registerTransferRoutes } from './transfers/transfer-routes.js';
 import { registerWalletRoutes } from './wallets/wallet-routes.js';
 
@@ -61,13 +63,17 @@ export function createApp(options: CreateAppOptions): express.Express {
       },
     }),
   );
+  app.use(createRequestTelemetryMiddleware(metrics.observeStage));
   app.use(metrics.middleware);
   app.use(express.json({ limit: '16kb' }));
 
   app.get('/health', async (_request, response) => {
     response.setHeader('cache-control', 'no-store');
     try {
-      await pool.query('SELECT 1 FROM schema_migrations LIMIT 1');
+      const telemetry = telemetryFor(response);
+      await withPoolClient(pool, telemetry, client =>
+        telemetry.measure('database.health', () => client.query('SELECT 1 FROM schema_migrations LIMIT 1')),
+      );
       response.status(200).json({ status: 'ok', service: 'wallet-transfer-service', revision });
     } catch {
       response.status(503).json({ code: 'database_unavailable', message: 'Database readiness check failed', revision });

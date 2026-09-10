@@ -11,6 +11,8 @@ services:
           property: connectionString
       - key: LOG_LEVEL
         value: info
+      - key: DATABASE_POOL_MAX
+        value: "40"
 
 databases:
   - name: wallet-transfer-db

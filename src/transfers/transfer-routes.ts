@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { requireUser } from '../http/auth.js';
 import type { Metrics } from '../observability/metrics.js';
+import { telemetryFor } from '../observability/request-telemetry.js';
 import { createTransfer, getTransferForUser } from './transfer-repository.js';
 
 const transferBody = z
@@ -31,7 +32,7 @@ export function registerTransferRoutes(router: Router, pool: Pool, metrics: Metr
       to: body.to,
       amountPaise: body.amount_paise,
       idempotencyKey: body.idempotency_key,
-    });
+    }, telemetryFor(response));
     if (result.replay) {
       metrics.idempotentReplay();
       request.log.info(
@@ -68,6 +69,6 @@ export function registerTransferRoutes(router: Router, pool: Pool, metrics: Metr
   router.get('/transfers/:id', async (request, response) => {
     const userId = requireUser(request);
     const { id } = transferParams.parse(request.params);
-    response.status(200).json(await getTransferForUser(pool, id, userId));
+    response.status(200).json(await getTransferForUser(pool, id, userId, telemetryFor(response)));
   });
 }
