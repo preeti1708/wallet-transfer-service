@@ -1,0 +1,96 @@
+# HELP wallet_http_requests_total Total HTTP requests handled by the wallet service.
+# TYPE wallet_http_requests_total counter
+wallet_http_requests_total{method="GET",route="/health",status_code="200"} 4
+wallet_http_requests_total{method="POST",route="/wallets",status_code="200"} 56
+wallet_http_requests_total{method="POST",route="/transfers",status_code="200"} 430
+wallet_http_requests_total{method="GET",route="/wallets/:id",status_code="200"} 12
+
+# HELP wallet_http_errors_total Total HTTP responses with a 4xx or 5xx status.
+# TYPE wallet_http_errors_total counter
+
+# HELP wallet_http_request_duration_seconds HTTP request duration in seconds. Use histogram_quantile(0.99, ...) for p99.
+# TYPE wallet_http_request_duration_seconds histogram
+wallet_http_request_duration_seconds_bucket{le="0.005",method="GET",route="/health",status_code="200"} 0
+wallet_http_request_duration_seconds_bucket{le="0.01",method="GET",route="/health",status_code="200"} 3
+wallet_http_request_duration_seconds_bucket{le="0.025",method="GET",route="/health",status_code="200"} 4
+wallet_http_request_duration_seconds_bucket{le="0.05",method="GET",route="/health",status_code="200"} 4
+wallet_http_request_duration_seconds_bucket{le="0.1",method="GET",route="/health",status_code="200"} 4
+wallet_http_request_duration_seconds_bucket{le="0.25",method="GET",route="/health",status_code="200"} 4
+wallet_http_request_duration_seconds_bucket{le="0.5",method="GET",route="/health",status_code="200"} 4
+wallet_http_request_duration_seconds_bucket{le="1",method="GET",route="/health",status_code="200"} 4
+wallet_http_request_duration_seconds_bucket{le="2.5",method="GET",route="/health",status_code="200"} 4
+wallet_http_request_duration_seconds_bucket{le="5",method="GET",route="/health",status_code="200"} 4
+wallet_http_request_duration_seconds_bucket{le="7.5",method="GET",route="/health",status_code="200"} 4
+wallet_http_request_duration_seconds_bucket{le="10",method="GET",route="/health",status_code="200"} 4
+wallet_http_request_duration_seconds_bucket{le="15",method="GET",route="/health",status_code="200"} 4
+wallet_http_request_duration_seconds_bucket{le="30",method="GET",route="/health",status_code="200"} 4
+wallet_http_request_duration_seconds_bucket{le="60",method="GET",route="/health",status_code="200"} 4
+wallet_http_request_duration_seconds_bucket{le="+Inf",method="GET",route="/health",status_code="200"} 4
+wallet_http_request_duration_seconds_sum{method="GET",route="/health",status_code="200"} 0.035294748
+wallet_http_request_duration_seconds_count{method="GET",route="/health",status_code="200"} 4
+wallet_http_request_duration_seconds_bucket{le="0.005",method="POST",route="/wallets",status_code="200"} 6
+wallet_http_request_duration_seconds_bucket{le="0.01",method="POST",route="/wallets",status_code="200"} 6
+wallet_http_request_duration_seconds_bucket{le="0.025",method="POST",route="/wallets",status_code="200"} 6
+wallet_http_request_duration_seconds_bucket{le="0.05",method="POST",route="/wallets",status_code="200"} 6
+wallet_http_request_duration_seconds_bucket{le="0.1",method="POST",route="/wallets",status_code="200"} 27
+wallet_http_request_duration_seconds_bucket{le="0.25",method="POST",route="/wallets",status_code="200"} 56
+wallet_http_request_duration_seconds_bucket{le="0.5",method="POST",route="/wallets",status_code="200"} 56
+wallet_http_request_duration_seconds_bucket{le="1",method="POST",route="/wallets",status_code="200"} 56
+wallet_http_request_duration_seconds_bucket{le="2.5",method="POST",route="/wallets",status_code="200"} 56
+wallet_http_request_duration_seconds_bucket{le="5",method="POST",route="/wallets",status_code="200"} 56
+wallet_http_request_duration_seconds_bucket{le="7.5",method="POST",route="/wallets",status_code="200"} 56
+wallet_http_request_duration_seconds_bucket{le="10",method="POST",route="/wallets",status_code="200"} 56
+wallet_http_request_duration_seconds_bucket{le="15",method="POST",route="/wallets",status_code="200"} 56
+wallet_http_request_duration_seconds_bucket{le="30",method="POST",route="/wallets",status_code="200"} 56
+wallet_http_request_duration_seconds_bucket{le="60",method="POST",route="/wallets",status_code="200"} 56
+wallet_http_request_duration_seconds_bucket{le="+Inf",method="POST",route="/wallets",status_code="200"} 56
+wallet_http_request_duration_seconds_sum{method="POST",route="/wallets",status_code="200"} 5.296006311
+wallet_http_request_duration_seconds_count{method="POST",route="/wallets",status_code="200"} 56
+wallet_http_request_duration_seconds_bucket{le="0.005",method="POST",route="/transfers",status_code="200"} 0
+wallet_http_request_duration_seconds_bucket{le="0.01",method="POST",route="/transfers",status_code="200"} 0
+wallet_http_request_duration_seconds_bucket{le="0.025",method="POST",route="/transfers",status_code="200"} 36
+wallet_http_request_duration_seconds_bucket{le="0.05",method="POST",route="/transfers",status_code="200"} 93
+wallet_http_request_duration_seconds_bucket{le="0.1",method="POST",route="/transfers",status_code="200"} 132
+wallet_http_request_duration_seconds_bucket{le="0.25",method="POST",route="/transfers",status_code="200"} 161
+wallet_http_request_duration_seconds_bucket{le="0.5",method="POST",route="/transfers",status_code="200"} 327
+wallet_http_request_duration_seconds_bucket{le="1",method="POST",route="/transfers",status_code="200"} 430
+wallet_http_request_duration_seconds_bucket{le="2.5",method="POST",route="/transfers",status_code="200"} 430
+wallet_http_request_duration_seconds_bucket{le="5",method="POST",route="/transfers",status_code="200"} 430
+wallet_http_request_duration_seconds_bucket{le="7.5",method="POST",route="/transfers",status_code="200"} 430
+wallet_http_request_duration_seconds_bucket{le="10",method="POST",route="/transfers",status_code="200"} 430
+wallet_http_request_duration_seconds_bucket{le="15",method="POST",route="/transfers",status_code="200"} 430
+wallet_http_request_duration_seconds_bucket{le="30",method="POST",route="/transfers",status_code="200"} 430
+wallet_http_request_duration_seconds_bucket{le="60",method="POST",route="/transfers",status_code="200"} 430
+wallet_http_request_duration_seconds_bucket{le="+Inf",method="POST",route="/transfers",status_code="200"} 430
+wallet_http_request_duration_seconds_sum{method="POST",route="/transfers",status_code="200"} 134.0498098859999
+wallet_http_request_duration_seconds_count{method="POST",route="/transfers",status_code="200"} 430
+wallet_http_request_duration_seconds_bucket{le="0.005",method="GET",route="/wallets/:id",status_code="200"} 12
+wallet_http_request_duration_seconds_bucket{le="0.01",method="GET",route="/wallets/:id",status_code="200"} 12
+wallet_http_request_duration_seconds_bucket{le="0.025",method="GET",route="/wallets/:id",status_code="200"} 12
+wallet_http_request_duration_seconds_bucket{le="0.05",method="GET",route="/wallets/:id",status_code="200"} 12
+wallet_http_request_duration_seconds_bucket{le="0.1",method="GET",route="/wallets/:id",status_code="200"} 12
+wallet_http_request_duration_seconds_bucket{le="0.25",method="GET",route="/wallets/:id",status_code="200"} 12
+wallet_http_request_duration_seconds_bucket{le="0.5",method="GET",route="/wallets/:id",status_code="200"} 12
+wallet_http_request_duration_seconds_bucket{le="1",method="GET",route="/wallets/:id",status_code="200"} 12
+wallet_http_request_duration_seconds_bucket{le="2.5",method="GET",route="/wallets/:id",status_code="200"} 12
+wallet_http_request_duration_seconds_bucket{le="5",method="GET",route="/wallets/:id",status_code="200"} 12
+wallet_http_request_duration_seconds_bucket{le="7.5",method="GET",route="/wallets/:id",status_code="200"} 12
+wallet_http_request_duration_seconds_bucket{le="10",method="GET",route="/wallets/:id",status_code="200"} 12
+wallet_http_request_duration_seconds_bucket{le="15",method="GET",route="/wallets/:id",status_code="200"} 12
+wallet_http_request_duration_seconds_bucket{le="30",method="GET",route="/wallets/:id",status_code="200"} 12
+wallet_http_request_duration_seconds_bucket{le="60",method="GET",route="/wallets/:id",status_code="200"} 12
+wallet_http_request_duration_seconds_bucket{le="+Inf",method="GET",route="/wallets/:id",status_code="200"} 12
+wallet_http_request_duration_seconds_sum{method="GET",route="/wallets/:id",status_code="200"} 0.011622780000000001
+wallet_http_request_duration_seconds_count{method="GET",route="/wallets/:id",status_code="200"} 12
+
+# HELP wallet_transfers_created_total Durable transfer records created, including completed and declined transfers.
+# TYPE wallet_transfers_created_total counter
+wallet_transfers_created_total 351
+
+# HELP wallet_transfers_declined_insufficient_funds_total Transfers declined because the source wallet had insufficient funds.
+# TYPE wallet_transfers_declined_insufficient_funds_total counter
+wallet_transfers_declined_insufficient_funds_total 76
+
+# HELP wallet_idempotent_replays_total Transfer requests served from an existing idempotency result.
+# TYPE wallet_idempotent_replays_total counter
+wallet_idempotent_replays_total 79

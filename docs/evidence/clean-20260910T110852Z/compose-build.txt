@@ -1,0 +1,145 @@
+time="2026-09-10T16:38:52+05:30" level=warning msg="buildx Docker CLI plugin not found: falling back to the classic builder. BuildKit-only build features (multi-arch, secrets, ssh, additional contexts, ...) will not be available"
+ Image walletcheck-28167-api Building 
+ Image walletcheck-28167-api Building 
+Sending build context to Docker daemon   62.5kB
+Step 1/26 : FROM node:24-alpine AS dependencies
+ ---> 50c8e8ca1d27
+Step 2/26 : WORKDIR /app
+ ---> Running in a9c0f0397769
+ ---> Removed intermediate container a9c0f0397769
+ ---> cb241b4f5a86
+Step 3/26 : COPY package.json package-lock.json ./
+ ---> 8f04d4ea799e
+Step 4/26 : RUN npm ci
+ ---> Running in 3c91ab286c21
+
+added 268 packages, and audited 269 packages in 14s
+
+73 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+[91mnpm warn install-scripts 1 package has install scripts not yet covered by allowScripts:
+npm warn install-scripts   esbuild@0.28.2 (postinstall: node install.js)
+npm warn install-scripts
+npm warn install-scripts Run `npm install-scripts ls` to review, or `npm install-scripts approve <pkg>` to allow.
+[0m[91mnpm notice
+npm notice New major version of npm available! 11.19.0 -> 12.0.2
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2
+npm notice To update run: npm install -g npm@12.0.2
+npm notice
+[0m ---> Removed intermediate container 3c91ab286c21
+ ---> 63a6c9e14e9a
+Step 5/26 : FROM dependencies AS build
+ ---> 63a6c9e14e9a
+Step 6/26 : COPY tsconfig.json tsconfig.build.json ./
+ ---> 9b8a8814afcf
+Step 7/26 : COPY src ./src
+ ---> 6c9b15acc467
+Step 8/26 : RUN npm run build
+ ---> Running in b374348d95fa
+
+> wallet-transfer-service@1.0.0 build
+> tsc -p tsconfig.build.json && mkdir -p dist/db/migrations && cp src/db/migrations/*.sql dist/db/migrations/
+
+ ---> Removed intermediate container b374348d95fa
+ ---> 2cb6de6c5d0f
+Step 9/26 : FROM node:24-alpine AS production-dependencies
+ ---> 50c8e8ca1d27
+Step 10/26 : WORKDIR /app
+ ---> Using cache
+ ---> cb241b4f5a86
+Step 11/26 : COPY package.json package-lock.json ./
+ ---> Using cache
+ ---> 8f04d4ea799e
+Step 12/26 : RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
+ ---> Running in bd00c51dfe71
+
+added 102 packages, and audited 103 packages in 1s
+
+29 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+[91mnpm notice
+npm notice New major version of npm available! 11.19.0 -> 12.0.2
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2
+npm notice To update run: npm install -g npm@12.0.2
+npm notice
+[0m[91mnpm warn using --force Recommended protections disabled.
+[0m ---> Removed intermediate container bd00c51dfe71
+ ---> 1be2f3f8f4e8
+Step 13/26 : FROM node:24-alpine AS runtime
+ ---> 50c8e8ca1d27
+Step 14/26 : ARG SOURCE_REVISION=""
+ ---> Running in d578b156b674
+ ---> Removed intermediate container d578b156b674
+ ---> 6a4328ab2b02
+Step 15/26 : ENV NODE_ENV=production
+ ---> Running in 9b25c7f8c4d2
+ ---> Removed intermediate container 9b25c7f8c4d2
+ ---> b5d142169010
+Step 16/26 : ENV SOURCE_REVISION=$SOURCE_REVISION
+ ---> Running in 0b0f4a9ce628
+ ---> Removed intermediate container 0b0f4a9ce628
+ ---> 908134d433db
+Step 17/26 : LABEL org.opencontainers.image.revision=$SOURCE_REVISION
+ ---> Running in e338eb7c97a3
+ ---> Removed intermediate container e338eb7c97a3
+ ---> cd2cd016fd58
+Step 18/26 : WORKDIR /app
+ ---> Running in ebc442eb2c51
+ ---> Removed intermediate container ebc442eb2c51
+ ---> 6e40a52f6b53
+Step 19/26 : COPY --from=production-dependencies --chown=node:node /app/node_modules ./node_modules
+ ---> bdb9d86fe4b6
+Step 20/26 : COPY --chown=node:node package.json package-lock.json ./
+ ---> 590dec20b683
+Step 21/26 : COPY --from=build --chown=node:node /app/dist ./dist
+ ---> 7950c390b195
+Step 22/26 : USER node
+ ---> Running in cc0cff0078fc
+ ---> Removed intermediate container cc0cff0078fc
+ ---> b8a774808376
+Step 23/26 : EXPOSE 3000
+ ---> Running in e295bd71a1f8
+ ---> Removed intermediate container e295bd71a1f8
+ ---> 9217f3365adb
+Step 24/26 : HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=3   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/health',{signal:AbortSignal.timeout(4000)}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+ ---> Running in 416a59147789
+ ---> Removed intermediate container 416a59147789
+ ---> 72a31d1fb36f
+Step 25/26 : CMD ["node", "dist/server.js"]
+ ---> Running in af4b7a6fc518
+ ---> Removed intermediate container af4b7a6fc518
+ ---> 31f1e27654b0
+Step 26/26 : LABEL com.docker.compose.image.builder=classic
+ ---> Running in b2919deae062
+ ---> Removed intermediate container b2919deae062
+ ---> 65157b83dcea
+Successfully built 65157b83dcea
+Successfully tagged walletcheck-28167-api:latest
+ Image walletcheck-28167-api Built 
+ Image walletcheck-28167-api Built 
+ Network walletcheck-28167_default Creating 
+ Volume walletcheck-28167_wallet-postgres-data Creating 
+ Volume walletcheck-28167_wallet-postgres-data Creating 
+ Network walletcheck-28167_default Creating 
+ Volume walletcheck-28167_wallet-postgres-data Created 
+ Volume walletcheck-28167_wallet-postgres-data Created 
+ Network walletcheck-28167_default Created 
+ Network walletcheck-28167_default Created 
+ Container walletcheck-28167-postgres-1 Creating 
+ Container walletcheck-28167-postgres-1 Created 
+ Container walletcheck-28167-api-1 Creating 
+ Container walletcheck-28167-api-1 Created 
+ Container walletcheck-28167-postgres-1 Starting 
+ Container walletcheck-28167-postgres-1 Started 
+ Container walletcheck-28167-postgres-1 Waiting 
+ Container walletcheck-28167-postgres-1 Healthy 
+ Container walletcheck-28167-api-1 Starting 
+ Container walletcheck-28167-api-1 Started 
+ Container walletcheck-28167-postgres-1 Waiting 
+ Container walletcheck-28167-api-1 Waiting 
+ Container walletcheck-28167-postgres-1 Healthy 
+ Container walletcheck-28167-api-1 Healthy 

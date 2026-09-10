@@ -1,0 +1,113 @@
+time="2026-09-10T16:57:41+05:30" level=warning msg="buildx Docker CLI plugin not found: falling back to the classic builder. BuildKit-only build features (multi-arch, secrets, ssh, additional contexts, ...) will not be available"
+ Image walletcheck-29407-api Building 
+ Image walletcheck-29407-api Building 
+Sending build context to Docker daemon  63.98kB
+Step 1/26 : FROM node:24-alpine AS dependencies
+ ---> 50c8e8ca1d27
+Step 2/26 : WORKDIR /app
+ ---> Using cache
+ ---> cb241b4f5a86
+Step 3/26 : COPY package.json package-lock.json ./
+ ---> Using cache
+ ---> 8f04d4ea799e
+Step 4/26 : RUN npm ci
+ ---> Using cache
+ ---> 63a6c9e14e9a
+Step 5/26 : FROM dependencies AS build
+ ---> 63a6c9e14e9a
+Step 6/26 : COPY tsconfig.json tsconfig.build.json ./
+ ---> Using cache
+ ---> 9b8a8814afcf
+Step 7/26 : COPY src ./src
+ ---> 687e9fb6d3b8
+Step 8/26 : RUN npm run build
+ ---> Running in 4fbf7dcf7745
+
+> wallet-transfer-service@1.0.0 build
+> tsc -p tsconfig.build.json && mkdir -p dist/db/migrations && cp src/db/migrations/*.sql dist/db/migrations/
+
+ ---> Removed intermediate container 4fbf7dcf7745
+ ---> d054e644abdf
+Step 9/26 : FROM node:24-alpine AS production-dependencies
+ ---> 50c8e8ca1d27
+Step 10/26 : WORKDIR /app
+ ---> Using cache
+ ---> cb241b4f5a86
+Step 11/26 : COPY package.json package-lock.json ./
+ ---> Using cache
+ ---> 8f04d4ea799e
+Step 12/26 : RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
+ ---> Using cache
+ ---> 1be2f3f8f4e8
+Step 13/26 : FROM node:24-alpine AS runtime
+ ---> 50c8e8ca1d27
+Step 14/26 : ARG SOURCE_REVISION=""
+ ---> Using cache
+ ---> 6a4328ab2b02
+Step 15/26 : ENV NODE_ENV=production
+ ---> Using cache
+ ---> b5d142169010
+Step 16/26 : ENV SOURCE_REVISION=$SOURCE_REVISION
+ ---> Running in 871f242bff79
+ ---> Removed intermediate container 871f242bff79
+ ---> ef2611769264
+Step 17/26 : LABEL org.opencontainers.image.revision=$SOURCE_REVISION
+ ---> Running in 9e31420b391b
+ ---> Removed intermediate container 9e31420b391b
+ ---> e5751976212e
+Step 18/26 : WORKDIR /app
+ ---> Running in e5856d5bd932
+ ---> Removed intermediate container e5856d5bd932
+ ---> e87dbf5c90ec
+Step 19/26 : COPY --from=production-dependencies --chown=node:node /app/node_modules ./node_modules
+ ---> df15bfefad91
+Step 20/26 : COPY --chown=node:node package.json package-lock.json ./
+ ---> 60d3d2beb0e0
+Step 21/26 : COPY --from=build --chown=node:node /app/dist ./dist
+ ---> a03562a8812a
+Step 22/26 : USER node
+ ---> Running in c45b47db90b8
+ ---> Removed intermediate container c45b47db90b8
+ ---> eeb1fa60ce44
+Step 23/26 : EXPOSE 3000
+ ---> Running in 996e0cc76638
+ ---> Removed intermediate container 996e0cc76638
+ ---> d2f58f80ce72
+Step 24/26 : HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=3   CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/health',{signal:AbortSignal.timeout(4000)}).then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+ ---> Running in d4529466564e
+ ---> Removed intermediate container d4529466564e
+ ---> 5b56800b1c99
+Step 25/26 : CMD ["node", "dist/server.js"]
+ ---> Running in 7496d5a56c31
+ ---> Removed intermediate container 7496d5a56c31
+ ---> 21901d07ace3
+Step 26/26 : LABEL com.docker.compose.image.builder=classic
+ ---> Running in 7405d1ab29fd
+ ---> Removed intermediate container 7405d1ab29fd
+ ---> a52b6cd623bc
+Successfully built a52b6cd623bc
+Successfully tagged walletcheck-29407-api:latest
+ Image walletcheck-29407-api Built 
+ Image walletcheck-29407-api Built 
+ Network walletcheck-29407_default Creating 
+ Volume walletcheck-29407_wallet-postgres-data Creating 
+ Volume walletcheck-29407_wallet-postgres-data Creating 
+ Network walletcheck-29407_default Creating 
+ Volume walletcheck-29407_wallet-postgres-data Created 
+ Volume walletcheck-29407_wallet-postgres-data Created 
+ Network walletcheck-29407_default Created 
+ Network walletcheck-29407_default Created 
+ Container walletcheck-29407-postgres-1 Creating 
+ Container walletcheck-29407-postgres-1 Created 
+ Container walletcheck-29407-api-1 Creating 
+ Container walletcheck-29407-api-1 Created 
+ Container walletcheck-29407-postgres-1 Starting 
+ Container walletcheck-29407-postgres-1 Started 
+ Container walletcheck-29407-postgres-1 Waiting 
+ Container walletcheck-29407-postgres-1 Healthy 
+ Container walletcheck-29407-api-1 Starting 
+ Container walletcheck-29407-api-1 Started 
+ Container walletcheck-29407-api-1 Waiting 
+ Container walletcheck-29407-postgres-1 Waiting 
+ Container walletcheck-29407-postgres-1 Healthy 
+ Container walletcheck-29407-api-1 Healthy 

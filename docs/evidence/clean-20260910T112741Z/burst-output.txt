@@ -1,0 +1,80 @@
+
+> wallet-transfer-service@1.0.0 burst
+> tsx scripts/burst.ts http://api:3000 --out docs/evidence/compose-burst.json
+
+{
+  "status": "passed",
+  "startedAt": "2026-09-10T11:28:36.444Z",
+  "finishedAt": "2026-09-10T11:28:37.884Z",
+  "runId": "2ca09c54-d63f-4528-aef8-ab031cefbd2c",
+  "baseUrl": "http://api:3000",
+  "revision": "95ca07197b578c0ed6ab57769ed98c02b9d76862",
+  "elapsedMs": 1438,
+  "phasesMs": {
+    "readiness": 58,
+    "walletCreates": 269,
+    "identicalTransfers": 81,
+    "contention": 876,
+    "exhaustion": 154
+  },
+  "concurrentWallet": {
+    "requests": 50,
+    "uniqueWallets": 1,
+    "balance": "10000"
+  },
+  "idempotency": {
+    "requests": 30,
+    "uniqueResponses": 1,
+    "sourceBalance": "9000",
+    "destinationBalance": "11000"
+  },
+  "contention": {
+    "requests": 300,
+    "failedRequests": 0,
+    "declinedTransfers": 34,
+    "totalBefore": "30000",
+    "totalAfter": "30000",
+    "minimumBalance": "9102",
+    "exactWalletBalances": true
+  },
+  "exhaustion": {
+    "requests": 50,
+    "completed": 8,
+    "declined": 42,
+    "sourceBalance": "1",
+    "destinationBalance": "24",
+    "identicalReplays": true
+  },
+  "network": {
+    "logicalRequests": 499,
+    "attempts": 499,
+    "httpFailures": 0,
+    "transportFailures": 0,
+    "protocolFailures": 0,
+    "retries": 0,
+    "statuses": {
+      "200": 499
+    },
+    "transportCodes": {},
+    "attemptMs": {
+      "samples": 499,
+      "p50": 434.12,
+      "p95": 792.58,
+      "p99": 822.8,
+      "max": 831.66
+    },
+    "endToEndMs": {
+      "samples": 499,
+      "p50": 434.13,
+      "p95": 792.59,
+      "p99": 822.81,
+      "max": 831.66
+    }
+  }
+}
+Evidence: docs/evidence/compose-burst.json
+npm notice
+npm notice New major version of npm available! 11.19.0 -> 12.0.2
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2
+npm notice To update run: npm install -g npm@12.0.2
+npm notice

@@ -1,0 +1,59 @@
+{
+  "generatedAt": "2026-09-10T11:24:17.754Z",
+  "scope": "snapshot difference during burst",
+  "transferHttpSamples": 330,
+  "largestFiniteBucketSeconds": 5,
+  "samplesBeyondFiniteBuckets": 112,
+  "serverTransferP99HistogramEstimateSeconds": null,
+  "buckets": [
+    {
+      "le": 0.005,
+      "count": 0
+    },
+    {
+      "le": 0.01,
+      "count": 0
+    },
+    {
+      "le": 0.025,
+      "count": 0
+    },
+    {
+      "le": 0.05,
+      "count": 0
+    },
+    {
+      "le": 0.1,
+      "count": 1
+    },
+    {
+      "le": 0.25,
+      "count": 18
+    },
+    {
+      "le": 0.5,
+      "count": 30
+    },
+    {
+      "le": 1,
+      "count": 41
+    },
+    {
+      "le": 2.5,
+      "count": 83
+    },
+    {
+      "le": 5,
+      "count": 218
+    },
+    {
+      "le": "+Inf",
+      "count": 330
+    }
+  ],
+  "domainCounters": {
+    "wallet_transfers_created_total": 226,
+    "wallet_transfers_declined_insufficient_funds_total": 26,
+    "wallet_idempotent_replays_total": 29
+  }
+}

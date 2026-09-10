@@ -1,0 +1,75 @@
+
+> wallet-transfer-service@1.0.0 burst
+> tsx scripts/burst.ts https://wallet-transfer-api.onrender.com --out docs/evidence/live-20260910T113022Z/burst.json
+
+{
+  "status": "passed",
+  "startedAt": "2026-09-10T11:30:23.289Z",
+  "finishedAt": "2026-09-10T11:30:42.084Z",
+  "runId": "c841b04a-771c-475b-ad54-ecee16b7c762",
+  "baseUrl": "https://wallet-transfer-api.onrender.com",
+  "revision": "95ca07197b578c0ed6ab57769ed98c02b9d76862",
+  "elapsedMs": 18794,
+  "phasesMs": {
+    "readiness": 908,
+    "walletCreates": 2429,
+    "identicalTransfers": 2124,
+    "contention": 9915,
+    "exhaustion": 3418
+  },
+  "concurrentWallet": {
+    "requests": 50,
+    "uniqueWallets": 1,
+    "balance": "10000"
+  },
+  "idempotency": {
+    "requests": 30,
+    "uniqueResponses": 1,
+    "sourceBalance": "9000",
+    "destinationBalance": "11000"
+  },
+  "contention": {
+    "requests": 300,
+    "failedRequests": 0,
+    "declinedTransfers": 34,
+    "totalBefore": "30000",
+    "totalAfter": "30000",
+    "minimumBalance": "9102",
+    "exactWalletBalances": true
+  },
+  "exhaustion": {
+    "requests": 50,
+    "completed": 8,
+    "declined": 42,
+    "sourceBalance": "1",
+    "destinationBalance": "24",
+    "identicalReplays": true
+  },
+  "network": {
+    "logicalRequests": 499,
+    "attempts": 499,
+    "httpFailures": 0,
+    "transportFailures": 0,
+    "protocolFailures": 0,
+    "retries": 0,
+    "statuses": {
+      "200": 499
+    },
+    "transportCodes": {},
+    "attemptMs": {
+      "samples": 499,
+      "p50": 2859.23,
+      "p95": 8857.98,
+      "p99": 9295.34,
+      "max": 9334.92
+    },
+    "endToEndMs": {
+      "samples": 499,
+      "p50": 2859.26,
+      "p95": 8857.99,
+      "p99": 9295.34,
+      "max": 9334.93
+    }
+  }
+}
+Evidence: docs/evidence/live-20260910T113022Z/burst.json

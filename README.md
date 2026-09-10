@@ -9,6 +9,8 @@ A small TypeScript/Express service with PostgreSQL and explicit SQL through `pg`
 - Repository: https://github.com/preeti1708/wallet-transfer-service
 - [One-page write-up](docs/WRITEUP.md) ([PDF](output/pdf/wallet-transfer-writeup.pdf)), [lock/failure reasoning](docs/CONCURRENCY.md), [verification record](docs/VERIFICATION.md), [session decisions and fixes](docs/SESSION.md)
 
+**Verified September 10, 2026:** 55 tests and CI passed; the deployed burst completed all 499 requests with zero failures or retries. [Results, source revision and retained failures](docs/VERIFICATION.md). Free PostgreSQL expires October 10, 2026.
+
 ## Start locally
 
 Install Docker Engine with Compose, then:

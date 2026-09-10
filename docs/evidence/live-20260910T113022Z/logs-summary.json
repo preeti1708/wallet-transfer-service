@@ -1,0 +1,23 @@
+{
+  "capturedAt": "2026-09-10T11:30:42.907562+00:00",
+  "entries": 200,
+  "keys": [
+    "correlation_id",
+    "event",
+    "level",
+    "reason",
+    "time",
+    "transfer_id"
+  ],
+  "events": [
+    "transfer.created",
+    "transfer.credited",
+    "transfer.debited",
+    "transfer.declined",
+    "transfer.idempotent_replay",
+    "wallet.created"
+  ],
+  "requiredEventsPresent": true,
+  "boundedSanitizedSchema": true,
+  "cacheControl": "no-store"
+}

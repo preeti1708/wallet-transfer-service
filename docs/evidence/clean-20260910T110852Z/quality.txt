@@ -1,0 +1,62 @@
+v24.21.0
+
+added 268 packages, and audited 269 packages in 4s
+
+73 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+npm warn install-scripts 1 package has install scripts not yet covered by allowScripts:
+npm warn install-scripts   esbuild@0.28.2 (postinstall: node install.js)
+npm warn install-scripts
+npm warn install-scripts Run `npm install-scripts ls` to review, or `npm install-scripts approve <pkg>` to allow.
+npm notice
+npm notice New major version of npm available! 11.19.0 -> 12.0.2
+npm notice Changelog: https://github.com/npm/cli/releases/tag/v12.0.2
+npm notice To update run: npm install -g npm@12.0.2
+npm notice
+
+> wallet-transfer-service@1.0.0 lint
+> eslint .
+
+
+> wallet-transfer-service@1.0.0 typecheck
+> tsc --noEmit
+
+
+> wallet-transfer-service@1.0.0 test
+> vitest run
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.0.0 [39m[90m/workspace[39m
+
+ [32m✓[39m test/hardening.integration.test.ts [2m([22m[2m17 tests[22m[2m)[22m[33m 825[2mms[22m[39m
+ [32m✓[39m test/transfers.integration.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 335[2mms[22m[39m
+ [32m✓[39m test/observability.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 148[2mms[22m[39m
+ [32m✓[39m test/wallets.integration.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 289[2mms[22m[39m
+ [32m✓[39m test/burst-client.integration.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 216[2mms[22m[39m
+ [32m✓[39m test/database.integration.test.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 845[2mms[22m[39m
+   [33m[2m✓[22m[39m survives an actual PostgreSQL idle connection termination[33m 415[2mms[22m[39m
+   [33m[2m✓[22m[39m survives an actual PostgreSQL active connection termination[33m 320[2mms[22m[39m
+ [32m✓[39m test/contention.integration.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 1008[2mms[22m[39m
+   [32m✓[39m conservation under contention [2m(1)[22m
+     [33m[2m✓[22m[39m preserves total money and non-negative balances during bidirectional transfers[33m 953[2mms[22m[39m
+ [32m✓[39m test/burst.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 1001[2mms[22m[39m
+   [32m✓[39m one-command burst probe [2m(1)[22m
+     [33m[2m✓[22m[39m proves get-or-create, idempotency, conservation, and no-overdraft[33m 962[2mms[22m[39m
+ [32m✓[39m test/health.integration.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 69[2mms[22m[39m
+ [32m✓[39m test/config.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32m✓[39m test/auth.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 4[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m11 passed[39m[22m[90m (11)[39m
+[2m      Tests [22m [1m[32m53 passed[39m[22m[90m (53)[39m
+[2m   Start at [22m 11:09:41
+[2m   Duration [22m 9.31s[2m (tests 59%, import 38%, transform 3%, worker 1%)[22m
+
+[2m    Isolate [22m [33m11 workers spawned[39m[2m · ~97ms startup each (spawn + environment, per file)[22m
+[2m            [22m [2mat least ~968ms faster with [22m[33misolate: false[39m[2m — reuses workers across files instead of one per file[22m
+
+
+> wallet-transfer-service@1.0.0 build
+> tsc -p tsconfig.build.json && mkdir -p dist/db/migrations && cp src/db/migrations/*.sql dist/db/migrations/
+

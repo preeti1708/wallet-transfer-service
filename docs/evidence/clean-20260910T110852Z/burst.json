@@ -1,0 +1,70 @@
+{
+  "status": "passed",
+  "startedAt": "2026-09-10T11:09:53.691Z",
+  "finishedAt": "2026-09-10T11:09:55.221Z",
+  "runId": "156210f2-de06-413e-9097-44b04236cea4",
+  "baseUrl": "http://api:3000",
+  "revision": "7e9b048ef4f627203b872e9699c01fc14277806c",
+  "elapsedMs": 1529,
+  "phasesMs": {
+    "readiness": 79,
+    "walletCreates": 265,
+    "identicalTransfers": 63,
+    "contention": 961,
+    "exhaustion": 161
+  },
+  "concurrentWallet": {
+    "requests": 50,
+    "uniqueWallets": 1,
+    "balance": "10000"
+  },
+  "idempotency": {
+    "requests": 30,
+    "uniqueResponses": 1,
+    "sourceBalance": "9000",
+    "destinationBalance": "11000"
+  },
+  "contention": {
+    "requests": 300,
+    "failedRequests": 0,
+    "declinedTransfers": 34,
+    "totalBefore": "30000",
+    "totalAfter": "30000",
+    "minimumBalance": "9102",
+    "exactWalletBalances": true
+  },
+  "exhaustion": {
+    "requests": 50,
+    "completed": 8,
+    "declined": 42,
+    "sourceBalance": "1",
+    "destinationBalance": "24",
+    "identicalReplays": true
+  },
+  "network": {
+    "logicalRequests": 499,
+    "attempts": 499,
+    "httpFailures": 0,
+    "transportFailures": 0,
+    "protocolFailures": 0,
+    "retries": 0,
+    "statuses": {
+      "200": 499
+    },
+    "transportCodes": {},
+    "attemptMs": {
+      "samples": 499,
+      "p50": 451.5,
+      "p95": 866.64,
+      "p99": 902.11,
+      "max": 911.27
+    },
+    "endToEndMs": {
+      "samples": 499,
+      "p50": 451.51,
+      "p95": 866.65,
+      "p99": 902.12,
+      "max": 911.28
+    }
+  }
+}

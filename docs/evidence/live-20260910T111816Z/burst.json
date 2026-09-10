@@ -1,0 +1,40 @@
+{
+  "status": "failed",
+  "startedAt": "2026-09-10T11:18:16.561Z",
+  "finishedAt": "2026-09-10T11:18:29.151Z",
+  "runId": "38e022cf-65db-4d6c-ab84-2ccf246e7f78",
+  "baseUrl": "https://wallet-transfer-api.onrender.com",
+  "message": "75/300 requests failed; first: Error: HTTP 500: POST /transfers",
+  "phasesMs": {
+    "readiness": 402,
+    "walletCreates": 1674,
+    "identicalTransfers": 2613
+  },
+  "network": {
+    "logicalRequests": 390,
+    "attempts": 390,
+    "httpFailures": 75,
+    "transportFailures": 0,
+    "protocolFailures": 0,
+    "retries": 0,
+    "statuses": {
+      "200": 315,
+      "500": 75
+    },
+    "transportCodes": {},
+    "attemptMs": {
+      "samples": 390,
+      "p50": 4521.71,
+      "p95": 7327.96,
+      "p99": 7550.97,
+      "max": 7586.27
+    },
+    "endToEndMs": {
+      "samples": 390,
+      "p50": 4521.72,
+      "p95": 7327.99,
+      "p99": 7550.99,
+      "max": 7586.3
+    }
+  }
+}

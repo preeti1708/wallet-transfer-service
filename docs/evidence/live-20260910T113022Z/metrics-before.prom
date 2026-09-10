@@ -1,0 +1,79 @@
+# HELP wallet_http_requests_total Total HTTP requests handled by the wallet service.
+# TYPE wallet_http_requests_total counter
+wallet_http_requests_total{method="HEAD",route="unmatched",status_code="404"} 1
+wallet_http_requests_total{method="GET",route="/health",status_code="200"} 7
+wallet_http_requests_total{method="GET",route="unmatched",status_code="404"} 1
+
+# HELP wallet_http_errors_total Total HTTP responses with a 4xx or 5xx status.
+# TYPE wallet_http_errors_total counter
+wallet_http_errors_total{method="HEAD",route="unmatched",status_code="404"} 1
+wallet_http_errors_total{method="GET",route="unmatched",status_code="404"} 1
+
+# HELP wallet_http_request_duration_seconds HTTP request duration in seconds. Use histogram_quantile(0.99, ...) for p99.
+# TYPE wallet_http_request_duration_seconds histogram
+wallet_http_request_duration_seconds_bucket{le="0.005",method="HEAD",route="unmatched",status_code="404"} 0
+wallet_http_request_duration_seconds_bucket{le="0.01",method="HEAD",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_bucket{le="0.025",method="HEAD",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_bucket{le="0.05",method="HEAD",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_bucket{le="0.1",method="HEAD",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_bucket{le="0.25",method="HEAD",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_bucket{le="0.5",method="HEAD",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_bucket{le="1",method="HEAD",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_bucket{le="2.5",method="HEAD",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_bucket{le="5",method="HEAD",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_bucket{le="7.5",method="HEAD",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_bucket{le="10",method="HEAD",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_bucket{le="15",method="HEAD",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_bucket{le="30",method="HEAD",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_bucket{le="60",method="HEAD",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_bucket{le="+Inf",method="HEAD",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_sum{method="HEAD",route="unmatched",status_code="404"} 0.007047128
+wallet_http_request_duration_seconds_count{method="HEAD",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_bucket{le="0.005",method="GET",route="/health",status_code="200"} 7
+wallet_http_request_duration_seconds_bucket{le="0.01",method="GET",route="/health",status_code="200"} 7
+wallet_http_request_duration_seconds_bucket{le="0.025",method="GET",route="/health",status_code="200"} 7
+wallet_http_request_duration_seconds_bucket{le="0.05",method="GET",route="/health",status_code="200"} 7
+wallet_http_request_duration_seconds_bucket{le="0.1",method="GET",route="/health",status_code="200"} 7
+wallet_http_request_duration_seconds_bucket{le="0.25",method="GET",route="/health",status_code="200"} 7
+wallet_http_request_duration_seconds_bucket{le="0.5",method="GET",route="/health",status_code="200"} 7
+wallet_http_request_duration_seconds_bucket{le="1",method="GET",route="/health",status_code="200"} 7
+wallet_http_request_duration_seconds_bucket{le="2.5",method="GET",route="/health",status_code="200"} 7
+wallet_http_request_duration_seconds_bucket{le="5",method="GET",route="/health",status_code="200"} 7
+wallet_http_request_duration_seconds_bucket{le="7.5",method="GET",route="/health",status_code="200"} 7
+wallet_http_request_duration_seconds_bucket{le="10",method="GET",route="/health",status_code="200"} 7
+wallet_http_request_duration_seconds_bucket{le="15",method="GET",route="/health",status_code="200"} 7
+wallet_http_request_duration_seconds_bucket{le="30",method="GET",route="/health",status_code="200"} 7
+wallet_http_request_duration_seconds_bucket{le="60",method="GET",route="/health",status_code="200"} 7
+wallet_http_request_duration_seconds_bucket{le="+Inf",method="GET",route="/health",status_code="200"} 7
+wallet_http_request_duration_seconds_sum{method="GET",route="/health",status_code="200"} 0.018670252000000002
+wallet_http_request_duration_seconds_count{method="GET",route="/health",status_code="200"} 7
+wallet_http_request_duration_seconds_bucket{le="0.005",method="GET",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_bucket{le="0.01",method="GET",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_bucket{le="0.025",method="GET",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_bucket{le="0.05",method="GET",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_bucket{le="0.1",method="GET",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_bucket{le="0.25",method="GET",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_bucket{le="0.5",method="GET",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_bucket{le="1",method="GET",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_bucket{le="2.5",method="GET",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_bucket{le="5",method="GET",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_bucket{le="7.5",method="GET",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_bucket{le="10",method="GET",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_bucket{le="15",method="GET",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_bucket{le="30",method="GET",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_bucket{le="60",method="GET",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_bucket{le="+Inf",method="GET",route="unmatched",status_code="404"} 1
+wallet_http_request_duration_seconds_sum{method="GET",route="unmatched",status_code="404"} 0.000982765
+wallet_http_request_duration_seconds_count{method="GET",route="unmatched",status_code="404"} 1
+
+# HELP wallet_transfers_created_total Durable transfer records created, including completed and declined transfers.
+# TYPE wallet_transfers_created_total counter
+wallet_transfers_created_total 0
+
+# HELP wallet_transfers_declined_insufficient_funds_total Transfers declined because the source wallet had insufficient funds.
+# TYPE wallet_transfers_declined_insufficient_funds_total counter
+wallet_transfers_declined_insufficient_funds_total 0
+
+# HELP wallet_idempotent_replays_total Transfer requests served from an existing idempotency result.
+# TYPE wallet_idempotent_replays_total counter
+wallet_idempotent_replays_total 0
