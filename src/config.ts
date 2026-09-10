@@ -7,7 +7,7 @@ const environmentSchema = z.object({
   HOST: z.string().min(1).default('0.0.0.0'),
   PORT: z.coerce.number().int().positive().max(65_535).default(3000),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
-  DATABASE_POOL_MAX: z.coerce.number().int().positive().max(40).default(40),
+  DATABASE_POOL_MAX: z.coerce.number().int().positive().max(40).default(20),
 });
 
 export interface Config {

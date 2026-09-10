@@ -3,7 +3,7 @@ import { createLogger } from '../observability/logger.js';
 
 const { Pool } = pg;
 
-export function createPool(databaseUrl: string, maxConnections = 40): pg.Pool {
+export function createPool(databaseUrl: string, maxConnections = 20): pg.Pool {
   if (!Number.isSafeInteger(maxConnections) || maxConnections < 1 || maxConnections > 40) {
     throw new Error('Database pool size must be an integer from 1 to 40');
   }

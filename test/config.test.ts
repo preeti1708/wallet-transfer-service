@@ -25,8 +25,8 @@ describe('loadConfig', () => {
     });
   });
 
-  it('defaults to 40 connections and rejects values unsafe for overlapping deploys', () => {
-    expect(loadConfig({ DATABASE_URL: 'postgres://localhost/wallet' }).databasePoolMax).toBe(40);
+  it('defaults to 20 connections and rejects values unsafe for overlapping deploys', () => {
+    expect(loadConfig({ DATABASE_URL: 'postgres://localhost/wallet' }).databasePoolMax).toBe(20);
     expect(() => loadConfig({
       DATABASE_URL: 'postgres://localhost/wallet',
       DATABASE_POOL_MAX: '41',

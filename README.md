@@ -44,7 +44,7 @@ DATABASE_URL=postgresql://localhost/wallet_dev npm run dev
 | `DATABASE_URL` | Required direct PostgreSQL connection URL. Keep it secret; never commit `.env`. |
 | `HOST`, `PORT` | `0.0.0.0`, `3000`. Render supplies `PORT`. |
 | `LOG_LEVEL` | `info`; accepts standard Pino levels or `silent`. |
-| `DATABASE_POOL_MAX` | `40`; constrained to 1–40 so two zero-downtime deployment instances remain below the free PostgreSQL 100-connection limit. |
+| `DATABASE_POOL_MAX` | `20`; constrained to 1–40. The lower default limits simultaneous transactions competing for the same wallet locks. |
 | `SOURCE_REVISION` | Optional Git SHA embedded in the image or supplied at runtime. |
 | `RENDER_GIT_COMMIT` | Render-supplied source SHA; used when `SOURCE_REVISION` is empty. |
 | `TEST_DATABASE_URL` | Disposable database whose name ends in `_test`; tests truncate it. |
@@ -155,7 +155,7 @@ sum(rate(wallet_idempotent_replays_total[5m]))
 
 `wallet_http_errors_total` counts 4xx and 5xx; domain declines remain HTTP 200. Histograms and counters are process-local and reset on restart. Finite latency buckets extend through 60 seconds after the first live burst exceeded the original 5-second maximum. Retained verification includes histogram tail coverage; client p99 is a separate measurement. Logs and counters can be lost in a crash after commit and are not the financial source of truth.
 
-The application pool is capped at 40 connections. Render's free PostgreSQL plan permits 100, while zero-downtime deploys temporarily run the old and new service instances together. Two full pools therefore consume at most 80 connections and retain 20 connections of operational headroom. Increasing the pool moves some waiting from the application queue into PostgreSQL; it does not remove wallet-row contention.
+The application pool defaults to 20 connections and is capped at 40. The lower default limits simultaneous transactions entering PostgreSQL's wallet-row lock queues. Render's free PostgreSQL plan permits 100 connections; even two zero-downtime deployment instances configured at the 40-connection maximum consume at most 80 and retain 20 connections of operational headroom. Increasing the pool moves waiting from the application queue into PostgreSQL; it does not remove wallet-row contention.
 
 ## Deployment and ₹0 limits
 

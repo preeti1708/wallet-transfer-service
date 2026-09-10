@@ -12,7 +12,7 @@ services:
       - key: LOG_LEVEL
         value: info
       - key: DATABASE_POOL_MAX
-        value: "40"
+        value: "20"
 
 databases:
   - name: wallet-transfer-db
