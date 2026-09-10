@@ -188,13 +188,13 @@ describe('observability', () => {
         'database.transaction.begin': expect.any(Number),
         'database.idempotency.reserve': expect.any(Number),
         'database.wallet.lock': expect.any(Number),
-        'database.wallet.debit': expect.any(Number),
-        'database.wallet.credit': expect.any(Number),
         'database.transfer.finalize': expect.any(Number),
-        'database.transfer.read': expect.any(Number),
         'database.transaction.commit': expect.any(Number),
       },
     });
+    expect(performance.stages_ms).not.toHaveProperty('database.wallet.debit');
+    expect(performance.stages_ms).not.toHaveProperty('database.wallet.credit');
+    expect(performance.stages_ms).not.toHaveProperty('database.transfer.read');
     expect(logs.body.entries).toContainEqual(expect.objectContaining({
       event: 'request.performance',
       correlation_id: 'transfer-read-performance',

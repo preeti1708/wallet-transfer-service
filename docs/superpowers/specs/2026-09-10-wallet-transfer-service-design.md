@@ -27,8 +27,8 @@ JSON responses use decimal strings for `balance_paise` and `amount_paise`. Postg
 2. Insert the transfer row as the idempotency reservation. Its wallet foreign keys are deferrable so missing-wallet validation can follow without weakening key-conflict precedence. A uniqueness conflict rolls back the local transaction, verifies source ownership, reads the committed original row, compares all request fields, and returns either the original response or HTTP 409.
 3. Lock both wallet rows using one `SELECT ... WHERE id = ANY($1) ORDER BY id FOR UPDATE`. Every transfer therefore acquires locks in deterministic UUID order, including simultaneous A-to-B and B-to-A requests.
 4. Validate that both wallets exist and the source belongs to the caller.
-5. If the source balance is insufficient, update the reserved transfer to `declined`, commit it, and return that durable result without changing either balance.
-6. Otherwise debit the source with a conditional `UPDATE ... WHERE balance_paise >= amount`, credit the destination, mark the transfer completed, and commit all changes atomically.
+5. Use one data-modifying CTE to conditionally update both balances, finalize the transfer, and return its stored row. Insufficient funds or recipient overflow skips both wallet updates and returns a durable decline.
+6. Commit the terminal transfer and any balance movement atomically.
 
 The sorted row locks prevent deadlock between opposite-direction transfers. The conditional debit remains a defense-in-depth no-overdraft check. A transaction either persists both balance changes and the idempotency result or none of them.
 

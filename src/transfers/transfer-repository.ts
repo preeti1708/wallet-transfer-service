@@ -119,22 +119,60 @@ async function readReplay(
   return { transfer: serializeTransfer(existing), replay: true };
 }
 
-async function finishTransfer(
+async function applyTransferOutcome(
   client: PoolClient,
   transferId: string,
+  command: TransferCommand,
+  completed: boolean,
+  declineReason: string | null,
   telemetry?: RequestTelemetry,
 ): Promise<Transfer> {
-  const result = await measure(telemetry, 'database.transfer.read', () => client.query<TransferRow>(
+  const result = await measure(telemetry, 'database.transfer.finalize', () => client.query<TransferRow>(
     `
+      WITH moved_wallets AS (
+        UPDATE wallets
+        SET balance_paise = CASE
+              WHEN id = $2::uuid THEN balance_paise - $1::bigint
+              ELSE balance_paise + $1::bigint
+            END,
+            updated_at = now()
+        WHERE $4::boolean
+          AND id = ANY(ARRAY[$2::uuid, $3::uuid])
+          AND EXISTS (
+            SELECT 1
+            FROM wallets source
+            WHERE source.id = $2::uuid
+              AND source.balance_paise >= $1::bigint
+          )
+        RETURNING id
+      ), finalized_transfer AS (
+        UPDATE transfers
+        SET status = CASE WHEN $4::boolean THEN 'completed' ELSE 'declined' END,
+            decline_reason = CASE WHEN $4::boolean THEN NULL ELSE $5::text END,
+            updated_at = now()
+        WHERE id = $6::uuid
+          AND (
+            NOT $4::boolean
+            OR (SELECT count(*) FROM moved_wallets) = 2
+          )
+        RETURNING id, idempotency_key, from_wallet_id, to_wallet_id, amount_paise,
+                  status, decline_reason, created_at, updated_at
+      )
       SELECT id, idempotency_key, from_wallet_id, to_wallet_id, amount_paise,
              status, decline_reason, created_at, updated_at
-      FROM transfers
-      WHERE id = $1
+      FROM finalized_transfer
     `,
-    [transferId],
+    [
+      command.amountPaise.toString(),
+      command.from,
+      command.to,
+      completed,
+      declineReason,
+      transferId,
+    ],
   ));
   const transfer = result.rows[0];
-  if (!transfer) throw new Error('Committed transfer row was not found');
+  if (!transfer) throw new Error('Transfer outcome could not be applied');
   return serializeTransfer(transfer);
 }
 
@@ -179,41 +217,18 @@ export async function createTransfer(
     // precedence; a recipient overflow is also a durable, replayable decline.
     const destinationOverflow = BigInt(source.balance_paise) >= amount
       && BigInt(destination.balance_paise) > 9_223_372_036_854_775_807n - amount;
-
-    const debit = destinationOverflow ? { rowCount: 0 } : await measure(telemetry, 'database.wallet.debit', () => client.query(
-      `
-        UPDATE wallets
-        SET balance_paise = balance_paise - $1, updated_at = now()
-        WHERE id = $2 AND balance_paise >= $1
-      `,
-      [command.amountPaise.toString(), command.from],
-    ));
-
-    if (debit.rowCount === 0) {
-      await measure(telemetry, 'database.transfer.finalize', () => client.query(
-        `
-          UPDATE transfers
-          SET status = 'declined', decline_reason = $2, updated_at = now()
-          WHERE id = $1
-        `,
-        [transferId, destinationOverflow ? 'destination_balance_limit' : 'insufficient_funds'],
-      ));
-    } else {
-      await measure(telemetry, 'database.wallet.credit', () => client.query(
-        `
-          UPDATE wallets
-          SET balance_paise = balance_paise + $1, updated_at = now()
-          WHERE id = $2
-        `,
-        [command.amountPaise.toString(), command.to],
-      ));
-      await measure(telemetry, 'database.transfer.finalize', () => client.query(
-        `UPDATE transfers SET status = 'completed', updated_at = now() WHERE id = $1`,
-        [transferId],
-      ));
-    }
-
-    const transfer = await finishTransfer(client, transferId, telemetry);
+    const completed = BigInt(source.balance_paise) >= amount && !destinationOverflow;
+    const declineReason = completed
+      ? null
+      : destinationOverflow ? 'destination_balance_limit' : 'insufficient_funds';
+    const transfer = await applyTransferOutcome(
+      client,
+      transferId,
+      command,
+      completed,
+      declineReason,
+      telemetry,
+    );
     await measure(telemetry, 'database.transaction.commit', () => client.query('COMMIT'));
     transactionOpen = false;
     return { transfer, replay: false };
