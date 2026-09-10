@@ -1,6 +1,8 @@
 .git
 .github
 .env
+.env.*
+!.env.example
 coverage
 dist
 docs
@@ -8,3 +10,4 @@ node_modules
 test
 tmp
 *.log
+postman

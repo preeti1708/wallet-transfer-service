@@ -8,10 +8,10 @@ import { createTransfer, getTransferForUser } from './transfer-repository.js';
 
 const transferBody = z
   .object({
-    from: z.string().uuid(),
-    to: z.string().uuid(),
+    from: z.string().uuid().toLowerCase(),
+    to: z.string().uuid().toLowerCase(),
     amount_paise: z.number().int().safe().positive(),
-    idempotency_key: z.string().min(1).max(128),
+    idempotency_key: z.string().min(1).max(128).refine(key => !key.includes('\0'), 'NUL is not supported in PostgreSQL text'),
   })
   .strict()
   .refine((body) => body.from !== body.to, {
@@ -42,7 +42,7 @@ export function registerTransferRoutes(router: Router, pool: Pool, metrics: Metr
       metrics.transferCreated();
       request.log.info({ event: 'transfer.created', transfer_id: result.transfer.id }, 'Transfer created');
       if (result.transfer.status === 'declined') {
-        metrics.transferDeclinedInsufficientFunds();
+        if (result.transfer.decline_reason === 'insufficient_funds') metrics.transferDeclinedInsufficientFunds();
         request.log.info(
           {
             event: 'transfer.declined',

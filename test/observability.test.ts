@@ -114,3 +114,19 @@ describe('observability', () => {
     expect(response.text).toContain('wallet_idempotent_replays_total 1');
   });
 });
+
+describe('operational data minimization', () => {
+  it('excludes query secrets, cookies, arbitrary headers and database error details from logs', async () => {
+    let output = '';
+    const pool = await createTestPool();
+    try {
+      const logger = createLogger('info', { write: chunk => { output += chunk; } });
+      const app = createApp({ pool, logger });
+      await request(app).get('/missing?token=secret-query-value')
+        .set('cookie', 'session=secret-cookie-value').set('x-api-key', 'secret-api-key-value');
+      logger.error({ err: Object.assign(new Error('postgresql://user:secret-database-value@host/db'), { detail: 'sensitive-row-value', code: '08006' }) }, 'Database unavailable');
+      for (const secret of ['secret-query-value', 'secret-cookie-value', 'secret-api-key-value', 'secret-database-value', 'sensitive-row-value']) expect(output).not.toContain(secret);
+      expect(output).toContain('08006');
+    } finally { await pool.end(); }
+  });
+});

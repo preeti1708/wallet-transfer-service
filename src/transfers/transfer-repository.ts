@@ -19,6 +19,7 @@ interface TransferRow {
 interface LockedWalletRow {
   id: string;
   user_id: string;
+  balance_paise: string;
 }
 
 interface ReplayRow extends TransferRow {
@@ -68,7 +69,8 @@ function serializeTransfer(row: TransferRow): Transfer {
 }
 
 function isUniqueViolation(error: unknown): boolean {
-  return typeof error === 'object' && error !== null && 'code' in error && error.code === '23505';
+  return typeof error === 'object' && error !== null && 'code' in error && error.code === '23505'
+    && 'constraint' in error && error.constraint === 'transfers_idempotency_key_key';
 }
 
 async function readReplay(client: PoolClient, command: TransferCommand): Promise<TransferResult> {
@@ -121,6 +123,7 @@ async function finishTransfer(client: PoolClient, transferId: string): Promise<T
 export async function createTransfer(pool: Pool, command: TransferCommand): Promise<TransferResult> {
   const client = await pool.connect();
   let transactionOpen = false;
+  let discardClient = false;
   try {
     await client.query('BEGIN');
     transactionOpen = true;
@@ -137,7 +140,7 @@ export async function createTransfer(pool: Pool, command: TransferCommand): Prom
 
     const locked = await client.query<LockedWalletRow>(
       `
-        SELECT id, user_id
+        SELECT id, user_id, balance_paise
         FROM wallets
         WHERE id = ANY($1::uuid[])
         ORDER BY id
@@ -148,8 +151,14 @@ export async function createTransfer(pool: Pool, command: TransferCommand): Prom
     if (locked.rowCount !== 2) throw new NotFoundError('Wallet');
     const source = locked.rows.find((wallet) => wallet.id === command.from);
     if (source?.user_id !== command.userId) throw new ForbiddenError('Only the source wallet owner may transfer funds');
+    const destination = locked.rows.find((wallet) => wallet.id === command.to)!;
+    const amount = BigInt(command.amountPaise);
+    // Both balances are read under our sorted row locks. Insufficient funds takes
+    // precedence; a recipient overflow is also a durable, replayable decline.
+    const destinationOverflow = BigInt(source.balance_paise) >= amount
+      && BigInt(destination.balance_paise) > 9_223_372_036_854_775_807n - amount;
 
-    const debit = await client.query(
+    const debit = destinationOverflow ? { rowCount: 0 } : await client.query(
       `
         UPDATE wallets
         SET balance_paise = balance_paise - $1, updated_at = now()
@@ -162,10 +171,10 @@ export async function createTransfer(pool: Pool, command: TransferCommand): Prom
       await client.query(
         `
           UPDATE transfers
-          SET status = 'declined', decline_reason = 'insufficient_funds', updated_at = now()
+          SET status = 'declined', decline_reason = $2, updated_at = now()
           WHERE id = $1
         `,
-        [transferId],
+        [transferId, destinationOverflow ? 'destination_balance_limit' : 'insufficient_funds'],
       );
     } else {
       await client.query(
@@ -188,16 +197,14 @@ export async function createTransfer(pool: Pool, command: TransferCommand): Prom
     return { transfer, replay: false };
   } catch (error) {
     if (transactionOpen) {
-      await client.query('ROLLBACK');
-      transactionOpen = false;
+      try { await client.query('ROLLBACK'); } catch { discardClient = true; }
     }
-    if (isUniqueViolation(error)) {
+    if (!discardClient && isUniqueViolation(error)) {
       return await readReplay(client, command);
     }
     throw error;
   } finally {
-    if (transactionOpen) await client.query('ROLLBACK').catch(() => undefined);
-    client.release();
+    client.release(discardClient);
   }
 }
 

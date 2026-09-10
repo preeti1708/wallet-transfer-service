@@ -17,7 +17,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        SOURCE_REVISION: ${SOURCE_REVISION:-}
     init: true
+    stop_grace_period: 40s
     environment:
       DATABASE_URL: postgresql://wallet:wallet@postgres:5432/wallet
       HOST: 0.0.0.0
@@ -27,7 +30,7 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "3000:3000"
+      - "127.0.0.1:${API_PORT:-3000}:3000"
 
 volumes:
   wallet-postgres-data:

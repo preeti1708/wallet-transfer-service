@@ -6,10 +6,11 @@ import type { Pool } from 'pg';
 import { loadConfig } from '../config.js';
 import { createPool } from './pool.js';
 
-const migrations = ['001_initial.sql', '002_defer_transfer_wallet_foreign_keys.sql'] as const;
+const migrations = ['001_initial.sql', '002_defer_transfer_wallet_foreign_keys.sql', '003_terminal_outcomes.sql'] as const;
 
 export async function runMigrations(pool: Pool): Promise<void> {
   const client = await pool.connect();
+  let discardClient = false;
   try {
     await client.query('SELECT pg_advisory_lock($1)', [824_911_037]);
     await client.query(`
@@ -34,13 +35,13 @@ export async function runMigrations(pool: Pool): Promise<void> {
         await client.query('INSERT INTO schema_migrations(name) VALUES ($1)', [name]);
         await client.query('COMMIT');
       } catch (error) {
-        await client.query('ROLLBACK');
+        try { await client.query('ROLLBACK'); } catch { discardClient = true; }
         throw error;
       }
     }
   } finally {
-    await client.query('SELECT pg_advisory_unlock($1)', [824_911_037]).catch(() => undefined);
-    client.release();
+    try { await client.query('SELECT pg_advisory_unlock($1)', [824_911_037]); } catch { discardClient = true; }
+    client.release(discardClient);
   }
 }
 

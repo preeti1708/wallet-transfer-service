@@ -18,6 +18,7 @@ export interface CreateAppOptions {
   logLevel?: string;
   logger?: Logger;
   publicLogs?: PublicLogStore;
+  revision?: string;
 }
 
 const acceptedCorrelationId = /^[A-Za-z0-9._-]{1,128}$/;
@@ -31,12 +32,19 @@ export function createApp(options: CreateAppOptions): express.Express {
   const { pool, logLevel = 'info' } = options;
   const publicLogs = options.publicLogs ?? createPublicLogStore();
   const logger = options.logger ?? createLogger(logLevel, undefined, publicLogs);
+  const revision = /^[a-f0-9]{7,40}$/.test(options.revision ?? '') ? options.revision : 'development';
   const app = express();
   const metrics = createMetrics();
   app.disable('x-powered-by');
   app.use(
     pinoHttp({
       logger,
+      // Only request identifiers and methods are retained. Paths, query strings,
+      // cookies, headers and bodies can contain secrets even on rejected requests.
+      serializers: {
+        req: (request) => ({ id: request.id, method: request.method }),
+        res: (response) => ({ statusCode: response.statusCode }),
+      },
       genReqId(request, response) {
         const requested = request.headers['x-correlation-id'];
         const id = typeof requested === 'string' && acceptedCorrelationId.test(requested) ? requested : randomUUID();
@@ -57,8 +65,13 @@ export function createApp(options: CreateAppOptions): express.Express {
   app.use(express.json({ limit: '16kb' }));
 
   app.get('/health', async (_request, response) => {
-    await pool.query('SELECT 1');
-    response.status(200).json({ status: 'ok' });
+    response.setHeader('cache-control', 'no-store');
+    try {
+      await pool.query('SELECT 1 FROM schema_migrations LIMIT 1');
+      response.status(200).json({ status: 'ok', service: 'wallet-transfer-service', revision });
+    } catch {
+      response.status(503).json({ code: 'database_unavailable', message: 'Database readiness check failed', revision });
+    }
   });
 
   app.get('/metrics', async (_request, response) => {

@@ -55,7 +55,7 @@ export function createMetrics(): Metrics {
     const startedAt = process.hrtime.bigint();
     response.once('finish', () => {
       const labels = {
-        method: request.method,
+        method: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'].includes(request.method) ? request.method : 'OTHER',
         route: routeLabel(request),
         status_code: response.statusCode.toString(),
       };

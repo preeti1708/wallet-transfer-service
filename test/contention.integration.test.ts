@@ -38,7 +38,7 @@ describe('conservation under contention', () => {
       { user: 'carol', id: await createWallet(app, 'carol') },
     ];
 
-    const commands = Array.from({ length: 240 }, (_, index) => {
+    const commands = Array.from({ length: 300 }, (_, index) => {
       const source = wallets[index % wallets.length]!;
       const destination = wallets[(index + 1 + (index % 2)) % wallets.length]!;
       return {
@@ -69,6 +69,6 @@ describe('conservation under contention', () => {
     expect(balances.rows.every((row) => BigInt(row.balance_paise) >= 0n)).toBe(true);
 
     const counts = await pool.query<{ count: string }>('SELECT count(*)::text AS count FROM transfers');
-    expect(counts.rows[0]?.count).toBe('240');
+    expect(counts.rows[0]?.count).toBe('300');
   });
 });

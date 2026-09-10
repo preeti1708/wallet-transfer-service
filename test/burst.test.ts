@@ -41,8 +41,16 @@ describe('one-command burst probe', () => {
     expect(report.idempotency.destinationBalance).toBe('11000');
     expect(report.contention.totalBefore).toBe('30000');
     expect(report.contention.totalAfter).toBe('30000');
-    expect(report.contention.declinedTransfers).toBe(20);
-    expect(report.contention.minimumBalance >= 0n).toBe(true);
+    expect(report.contention.requests).toBe(300);
+    expect(report.contention.declinedTransfers).toBe(34);
+    expect(report.exhaustion).toMatchObject({ requests: 50, completed: 8, declined: 42, sourceBalance: '1', destinationBalance: '24', identicalReplays: true });
+    expect(report.network).toMatchObject({ httpFailures: 0, protocolFailures: 0 });
+    expect(report.network.retries).toBe(report.network.transportFailures);
+    expect(report.network.attempts).toBe(report.network.logicalRequests + report.network.retries);
+    expect(report.network.endToEndMs.p99).toBeGreaterThan(0);
+    expect((await pool.query('SELECT count(*)::int AS n FROM wallets')).rows[0].n).toBe(6);
+    expect((await pool.query('SELECT count(*)::int AS n FROM transfers')).rows[0].n).toBe(351);
+    expect(BigInt(report.contention.minimumBalance) >= 0n).toBe(true);
     expect(report.contention.failedRequests).toBe(0);
   });
 });
