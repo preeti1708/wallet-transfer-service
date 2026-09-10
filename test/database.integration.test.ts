@@ -4,6 +4,38 @@ import { randomUUID } from 'node:crypto';
 import { expect, it } from 'vitest';
 import { createTestPool, resetDatabase, testDatabaseUrl } from './helpers/database.js';
 import { runMigrations } from '../src/db/migrate.js';
+import request from 'supertest';
+import { createApp } from '../src/app.js';
+
+it('lets a queued wallet create survive a five-second contention interval', async () => {
+  const pool = await createTestPool();
+  pool.options.max = 1;
+  const holder = await pool.connect();
+  let released = false;
+  const release = () => { if (!released) { released = true; holder.release(); } };
+  const timer = setTimeout(release, 5_300);
+  try {
+    const app = createApp({ pool, logLevel: 'silent' });
+    const response = await request(app).post('/wallets')
+      .set('authorization', `Bearer queue-${randomUUID()}`).send({ initial_balance_paise: 1 });
+    expect(response.status).toBe(200);
+    expect(response.body.balance_paise).toBe('1');
+  } finally { clearTimeout(timer); release(); await pool.end(); }
+}, 15_000);
+
+it('returns a sanitized retryable 503 when pool acquisition expires', async () => {
+  const pool = await createTestPool();
+  pool.options.max = 1;
+  pool.options.connectionTimeoutMillis = 50;
+  const holder = await pool.connect();
+  try {
+    const response = await request(createApp({ pool, logLevel: 'silent' })).post('/wallets')
+      .set('authorization', `Bearer timeout-${randomUUID()}`).send({});
+    expect(response.status).toBe(503);
+    expect(response.body.code).toBe('database_busy');
+    expect(JSON.stringify(response.body)).not.toContain('timeout exceeded');
+  } finally { holder.release(); await pool.end(); }
+});
 
 it.each(['idle', 'active'])('survives an actual PostgreSQL %s connection termination', async mode => {
   const { stdout } = await promisify(execFile)(process.execPath, ['--import', 'tsx', 'test/helpers/disconnect-probe.ts', mode], {

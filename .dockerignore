@@ -11,3 +11,4 @@ test
 tmp
 *.log
 postman
+output

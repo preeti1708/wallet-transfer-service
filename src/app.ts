@@ -110,6 +110,14 @@ export function createApp(options: CreateAppOptions): express.Express {
       });
       return;
     }
+    if (error instanceof Error && (
+      error.message === 'timeout exceeded when trying to connect' ||
+      ('code' in error && (error.code === '55P03' || error.code === '57014'))
+    )) {
+      request.log.warn({ event: 'request.rejected', error_code: 'database_busy' }, 'Database contention deadline exceeded');
+      response.status(503).json({ code: 'database_busy', message: 'Database is busy. Retry with the original request and idempotency key.' });
+      return;
+    }
     if (error instanceof SyntaxError && 'status' in error && error.status === 400) {
       response.status(400).json({ code: 'invalid_json', message: 'Request body is not valid JSON' });
       return;

@@ -7,7 +7,7 @@ A small TypeScript/Express service with PostgreSQL and explicit SQL through `pg`
 - Public sanitized logs: https://wallet-transfer-api.onrender.com/logs
 - Metrics: https://wallet-transfer-api.onrender.com/metrics
 - Repository: https://github.com/preeti1708/wallet-transfer-service
-- [One-page write-up](docs/WRITEUP.md), [lock/failure reasoning](docs/CONCURRENCY.md), [verification record](docs/VERIFICATION.md), [session decisions and fixes](docs/SESSION.md)
+- [One-page write-up](docs/WRITEUP.md) ([PDF](output/pdf/wallet-transfer-writeup.pdf)), [lock/failure reasoning](docs/CONCURRENCY.md), [verification record](docs/VERIFICATION.md), [session decisions and fixes](docs/SESSION.md)
 
 ## Start locally
 
@@ -87,7 +87,7 @@ Retain the exact transfer body and key when retrying. `GET /transfers/TRANSFER_I
 
 Inputs are JSON numbers: funding must be a non-negative safe integer; transfers a positive safe integer, at most `9007199254740991` paise. Fractions, negative values, zero transfers, numeric strings and unsafe numbers are rejected. Storage and calculations use PostgreSQL BIGINT/JS BigInt; monetary outputs are always decimal strings, including balances above JavaScript's safe integer range. UUID spelling is normalized to lowercase; endpoints must be distinct. Idempotency keys are globally unique, 1–128 characters (excluding PostgreSQL-incompatible NUL); existing Unicode and whitespace keys remain supported. JSON requests are capped at 16 KiB and unknown fields are rejected.
 
-Errors have `{ "code": "...", "message": "..." }` and optional validation details: 400 invalid request/JSON; 401 missing token; 403 unauthorized debit/replay; 404 absent or hidden resource; 409 changed request on an owned key; 413 oversized body; 415 unsupported body encoding; 500 unexpected failure. Insufficient funds is a durable `declined/insufficient_funds` result, not an HTTP error. Recipient BIGINT overflow is `declined/destination_balance_limit`, also durable. All responses carry `x-correlation-id`.
+Errors have `{ "code": "...", "message": "..." }` and optional validation details: 400 invalid request/JSON; 401 missing token; 403 unauthorized debit/replay; 404 absent or hidden resource; 409 changed request on an owned key; 413 oversized body; 415 unsupported body encoding; 503 database contention timeout; 500 unexpected failure. Retry a 503 with the original request and idempotency key. Insufficient funds is a durable `declined/insufficient_funds` result, not an HTTP error. Recipient BIGINT overflow is `declined/destination_balance_limit`, also durable. All responses carry `x-correlation-id`.
 
 The existing [Postman collection](postman/Wallet%20Transfer%20Service.postman_collection.json) is preserved for manual examples. The burst runner below is the authoritative repeatable concurrency probe.
 
@@ -142,7 +142,7 @@ sum(rate(wallet_transfers_declined_insufficient_funds_total[5m]))
 sum(rate(wallet_idempotent_replays_total[5m]))
 ```
 
-`wallet_http_errors_total` counts 4xx and 5xx; domain declines remain HTTP 200. Histograms and counters are process-local and reset on restart. Retained verification includes histogram tail coverage; client p99 is a separate measurement. Logs and counters can be lost in a crash after commit and are not the financial source of truth.
+`wallet_http_errors_total` counts 4xx and 5xx; domain declines remain HTTP 200. Histograms and counters are process-local and reset on restart. Finite latency buckets extend through 60 seconds after the first live burst exceeded the original 5-second maximum. Retained verification includes histogram tail coverage; client p99 is a separate measurement. Logs and counters can be lost in a crash after commit and are not the financial source of truth.
 
 ## Deployment and ₹0 limits
 

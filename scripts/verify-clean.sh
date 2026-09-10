@@ -18,8 +18,8 @@ cleanup() {
   trap - EXIT
   compose logs --no-color > "$evidence/compose.log" 2>&1 || true
   compose down --volumes --remove-orphans > "$evidence/cleanup.log" 2>&1 || true
+  if ! rm -rf "$checkout"; then result=1; fi
   printf '{"finishedAt":"%s","revision":"%s","exitCode":%s}\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$revision" "$result" > "$evidence/result.json"
-  rm -rf "$checkout"
   printf 'Verification evidence: %s\n' "$evidence"
   exit "$result"
 }
@@ -33,12 +33,14 @@ compose up --build --detach --wait --wait-timeout 180 2>&1 | tee "$evidence/comp
 compose exec -T postgres createdb -U wallet wallet_test
 # Install, lint, typecheck, test and build using the same LTS major as the image.
 docker run --rm --network "${project}_default" \
+  --user "$(id -u):$(id -g)" --env npm_config_cache=/tmp/npm-cache \
   --mount "type=bind,source=$checkout,target=/workspace" --workdir /workspace \
   --env TEST_DATABASE_URL=postgresql://wallet:wallet@postgres:5432/wallet_test \
   node:24-alpine sh -c 'node --version && npm ci && npm run lint && npm run typecheck && npm test && npm run build' \
   2>&1 | tee "$evidence/quality.txt"
 compose exec -T api node -e 'if(process.getuid()===0)process.exit(1); if(require("fs").existsSync("node_modules/typescript"))process.exit(2); console.log(JSON.stringify({uid:process.getuid(),node:process.version,developmentDependencies:false,revision:process.env.SOURCE_REVISION}))' > "$evidence/runtime.json"
 docker run --rm --network "${project}_default" \
+  --user "$(id -u):$(id -g)" --env npm_config_cache=/tmp/npm-cache \
   --mount "type=bind,source=$checkout,target=/workspace" --workdir /workspace \
   node:24-alpine npm run burst -- http://api:3000 --out docs/evidence/compose-burst.json \
   2>&1 | tee "$evidence/burst-output.txt"
